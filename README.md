@@ -147,7 +147,7 @@ python -m steel_crm.cli run              # checks, star schema, model, dashboard
 open dashboard/index.html                # or any browser; no server needed
 
 python -m steel_crm.cli generate-data --seed 7   # a different synthetic export
-pytest                                           # 17 tests
+pytest                                           # 18 tests
 ```
 
 Outputs land in `data/processed/`: `steel_crm.db` (SQLite star schema), `powerbi/*.csv` (the same tables for Power BI), `data_quality_report.csv` and `model_metrics.json`.

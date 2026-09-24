@@ -52,7 +52,7 @@ A static, self-contained page ([`dashboard/index.html`](dashboard/index.html), C
 
 ![Overview: KPIs and auto-generated insights](docs/screenshots/overview.png)
 
-**Sales funnel: the Dynamics 365 process from lead to invoice, with where and why deals drop out (English and Persian labels, new business or all opportunities)**
+**Sales funnel: the Dynamics 365 process from lead to invoice, with where and why deals drop out (new business or all opportunities)**
 
 ![Sales funnel: Lead, Opportunity, Quote, Order, Invoice, Won / Lost, with drop-out reasons](docs/screenshots/funnel.png)
 

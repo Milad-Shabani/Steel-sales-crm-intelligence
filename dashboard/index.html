@@ -7,7 +7,7 @@
 <title>Ahanyar Steel Trading — Marketing, Sales &amp; CRM Intelligence</title>
 <meta name="description" content="Marketing, sales and CRM analytics for a steel trading company, built on a Microsoft Dynamics 365 Sales (Dataverse) export.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="./chart.umd.min.js"></script>
 <script src="./data.js"></script>
 <style>
@@ -123,15 +123,13 @@
   .stat strong.orange{color:var(--orange);}
 
   /* Sales funnel: Lead -> Opportunity -> Quote -> Order -> Invoice, with drop-outs */
-  .fa{font-family:'Vazirmatn', Tahoma, sans-serif; direction:rtl; unicode-bidi:isolate;}
-  h2 .fa{font-size:17px; font-weight:700; color:var(--orange); margin-left:8px;}
   .funnel-tabs{display:inline-flex; background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:4px; gap:4px; flex-wrap:wrap;}
   .funnel-tabs button{border:0; background:transparent; font:700 13px 'Manrope', sans-serif; color:var(--dim); padding:7px 14px; border-radius:999px; cursor:pointer;}
   .funnel-tabs button.on{background:#fff; color:var(--navy); box-shadow:0 1px 4px rgba(11,37,69,.14);}
   .funnel{display:grid; grid-template-columns:170px minmax(0,1.1fr) minmax(0,1fr); column-gap:26px; margin-top:6px;}
   .f-label{display:flex; flex-direction:column; justify-content:center; padding:12px 0; border-bottom:1px dashed var(--line);}
   .f-label .en{font-family:'Manrope', sans-serif; font-weight:800; font-size:17px; color:var(--navy); line-height:1.2;}
-  .f-label .fa{font-size:14.5px; font-weight:600; color:var(--orange); margin-top:2px; text-align:left;}
+  .f-label .note{font-size:13px; font-weight:600; color:var(--orange); margin-top:2px;}
   .f-label code{font-size:11px; color:var(--faint); margin-top:5px;}
   .f-shape{position:relative; min-height:118px;}
   .f-shape .trap{position:absolute; top:0; bottom:0; left:50%; width:var(--w); transform:translateX(-50%);
@@ -146,7 +144,6 @@
   .leak-head .ok{font-weight:700; color:var(--steel);}
   .r{display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) 46px; align-items:center; gap:8px; font-size:12px; color:var(--dim);}
   .r .rl{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .r .rl .fa{margin-left:6px; color:var(--faint); font-size:11.5px;}
   .r .rb{height:7px; background:var(--grid); border-radius:4px; overflow:hidden;}
   .r .rb i{display:block; height:100%; background:var(--red); border-radius:4px; opacity:.85;}
   .r.pending .rb i{background:var(--sky);}
@@ -160,7 +157,6 @@
   .oc.won{background:var(--teal-soft); border-color:#BFE8DE;}
   .oc.lost{background:var(--red-soft); border-color:#F3C9C9;}
   .oc .lbl{display:flex; align-items:baseline; gap:8px; font-weight:700; font-size:13px; color:var(--dim);}
-  .oc .lbl .fa{font-size:13.5px;}
   .oc strong{display:block; font-family:'Manrope', sans-serif; font-weight:800; font-size:27px; color:var(--navy); margin-top:4px; line-height:1.15;}
   .oc .sub{font-size:12.3px; color:var(--dim); margin-top:3px;}
   .oc .sub b{color:var(--text);}
@@ -240,7 +236,7 @@
 
   <section id="funnel">
     <div class="section-head">
-      <h2>Sales funnel <span class="fa">قیف فروش</span><small>The Dynamics 365 sales process from lead to invoice: how many records move on at each step, and why the rest drop out</small></h2>
+      <h2>Sales funnel<small>The Dynamics 365 sales process from lead to invoice: how many records move on at each step, and why the rest drop out</small></h2>
       <div class="funnel-tabs" role="tablist" aria-label="Funnel view">
         <button type="button" class="on" data-view="new_business" role="tab" aria-selected="true">New business · from leads</button>
         <button type="button" data-view="all" role="tab" aria-selected="false">All opportunities · incl. repeat</button>
@@ -735,22 +731,13 @@ document.getElementById('takeProv').innerHTML = `<b>${esc(PR[0].province)}</b> b
 }
 
 // ------------------------------------------------------------------ sales funnel (plain HTML/CSS, no Chart.js needed)
-const FA = {
-  'Lost':'از دست رفته', 'Cannot Contact':'عدم دسترسی', 'No Longer Interested':'عدم تمایل', 'Canceled':'لغو شده',
-  'Still open':'در حال پیگیری', 'Open, not quoted yet':'باز، هنوز بدون پیش‌فاکتور', 'Open, still negotiating':'باز، در حال مذاکره',
-  'Awaiting delivery':'در انتظار تحویل', 'Price':'قیمت', 'Lost to Competitor':'باخت به رقیب',
-  'Slow Quote / Price Expired':'پیش‌فاکتور دیرهنگام / انقضای قیمت', 'Credit Terms':'شرایط اعتباری', 'Delivery Lead Time':'زمان تحویل',
-  'Spec / Quality':'مشخصات / کیفیت', 'Project Postponed':'تعویق پروژه', 'Bought Direct from Mill':'خرید مستقیم از کارخانه',
-  'Paid':'تسویه‌شده', 'Open, not due':'باز، سررسید نشده', 'Overdue':'معوق', 'Not recorded':'ثبت نشده',
-};
-const fa = r => FA[r] ? `<span class="fa">${FA[r]}</span>` : '';
 const pending = r => r.startsWith('Open') || r === 'Still open' || r === 'Awaiting delivery';
 const STEP_COLOR = {lead:'#8DA9C4', opportunity:'#5B84B1', quote:'#2F6DB5', order:'#134074', invoice:'#0B2545'};
 
 function reasonRows(reasons, total, cls) {
   const top = reasons.slice(0, 6), max = Math.max(1, ...top.map(r => r.count));
   const rows = top.map(r => `<div class="r ${cls ? cls(r.reason) : (pending(r.reason) ? 'pending' : '')}" title="${esc(r.reason)}: ${fmt(r.count)} (${pct(r.count / total)})">
-      <span class="rl">${esc(r.reason)}${fa(r.reason)}</span><span class="rb"><i style="width:${(r.count / max * 100).toFixed(0)}%"></i></span><span class="rc">${fmt(r.count)}</span></div>`).join('');
+      <span class="rl">${esc(r.reason)}</span><span class="rb"><i style="width:${(r.count / max * 100).toFixed(0)}%"></i></span><span class="rc">${fmt(r.count)}</span></div>`).join('');
   const rest = reasons.slice(6);
   return rows + (rest.length ? `<div class="r-more">+ ${rest.length} more reason${rest.length > 1 ? 's' : ''} (${fmt(rest.reduce((a, r) => a + r.count, 0))})</div>` : '');
 }
@@ -766,14 +753,14 @@ function renderFunnel(view) {
     if (s.key === 'order' && s.tons) caption += ` · ${fmt(s.tons)} t`;
     let right;
     if (leak) {
-      right = `<div class="leak-head"><span class="pass">${pct(next.count / s.count)} move on to ${next.en}</span>` +
+      right = `<div class="leak-head"><span class="pass">${pct(next.count / s.count)} move on to ${next.name}</span>` +
         `<span class="${leak.count ? 'drop' : 'ok'}">${leak.count ? fmt(leak.count) + ' drop out (' + pct(leak.count / s.count) + ')' : 'none drop out'}</span></div>` +
         reasonRows(leak.reasons, s.count);
     } else {
       right = `<div class="leak-head"><span class="ok">Payment status</span><span class="ok">${pct((s.payment.find(p => p.reason === 'Paid') || {count: 0}).count / s.count)} paid</span></div>` +
         reasonRows(s.payment, s.count, r => r === 'Paid' ? 'paid' : r === 'Overdue' ? '' : 'pending');
     }
-    return `<div class="f-label"><span class="en">${s.en}</span><span class="fa">${s.fa}</span><code>${s.entity}</code></div>
+    return `<div class="f-label"><span class="en">${s.name}</span><span class="note">${s.note}</span><code>${s.entity}</code></div>
       <div class="f-shape"><div class="trap" style="--w:${w.toFixed(1)}%; --r:${(wNext / w * 100).toFixed(1)}%; background:${STEP_COLOR[s.key]}"></div>
         <div class="f-num"><strong>${fmt(s.count)}</strong><span>${caption}</span></div></div>
       <div class="f-leak">${right}</div>`;
@@ -783,9 +770,9 @@ function renderFunnel(view) {
   const topLost = o.lost_reasons.slice(0, 3).map(r => `${esc(r.reason)} (${fmt(r.count)})`).join(', ');
   document.getElementById('funnelOutcome').innerHTML =
     `<div class="outcome-bar" title="Won / Lost / Open"><i style="width:${o.won / total * 100}%; background:${C.teal}"></i><i style="width:${o.lost / total * 100}%; background:${C.red}"></i><i style="width:${o.open / total * 100}%; background:${C.sky}"></i></div>
-     <div class="oc won"><div class="lbl">Won <span class="fa">فروش موفق</span></div><strong>${fmt(o.won)}</strong><div class="sub"><b>${irr(o.won_value)}</b> · win rate <b>${pct(o.win_rate)}</b> of closed deals</div></div>
-     <div class="oc lost"><div class="lbl">Lost <span class="fa">از دست‌رفته</span></div><strong>${fmt(o.lost)}</strong><div class="sub"><b>${irr(o.lost_value)}</b> of estimated value · top reasons: ${topLost}</div></div>
-     <div class="oc"><div class="lbl">Still open <span class="fa">باز</span></div><strong>${fmt(o.open)}</strong><div class="sub"><b>${irr(o.open_value)}</b> in the open pipeline</div></div>`;
+     <div class="oc won"><div class="lbl">Won</div><strong>${fmt(o.won)}</strong><div class="sub"><b>${irr(o.won_value)}</b> · win rate <b>${pct(o.win_rate)}</b> of closed deals</div></div>
+     <div class="oc lost"><div class="lbl">Lost</div><strong>${fmt(o.lost)}</strong><div class="sub"><b>${irr(o.lost_value)}</b> of estimated value · top reasons: ${topLost}</div></div>
+     <div class="oc"><div class="lbl">Still open</div><strong>${fmt(o.open)}</strong><div class="sub"><b>${irr(o.open_value)}</b> in the open pipeline</div></div>`;
 
   const q = steps.find(s => s.key === 'quote'), qLeak = seg.leaks[steps.indexOf(q)];
   const qLost = qLeak.reasons.filter(r => !pending(r.reason));

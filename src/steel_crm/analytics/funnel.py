@@ -28,12 +28,13 @@ import pandas as pd
 
 from ..warehouse.star_schema import Warehouse
 
+# step: (name, what a record at this step is, Dataverse table)
 STEPS = {
-    "lead": ("Lead", "سرنخ فروش", "lead"),
-    "opportunity": ("Opportunity", "فرصت فروش", "opportunity"),
-    "quote": ("Quote", "پیش‌فاکتور", "quote"),
-    "order": ("Order", "سفارش", "salesorder"),
-    "invoice": ("Invoice", "فاکتور", "invoice"),
+    "lead": ("Lead", "Prospect captured", "lead"),
+    "opportunity": ("Opportunity", "Qualified deal", "opportunity"),
+    "quote": ("Quote", "Priced offer sent", "quote"),
+    "order": ("Order", "Deal won, order booked", "salesorder"),
+    "invoice": ("Invoice", "Delivered and billed", "invoice"),
 }
 
 
@@ -50,11 +51,11 @@ def _reasons(labels: pd.Series, values: pd.Series | None = None) -> list[dict]:
 
 
 def _step(key: str, count: int, value: float | None = None, tons: float | None = None, **extra) -> dict:
-    en, fa, entity = STEPS[key]
+    name, note, entity = STEPS[key]
     return {
         "key": key,
-        "en": en,
-        "fa": fa,
+        "name": name,
+        "note": note,
         "entity": entity,
         "count": int(count),
         "value": None if value is None else float(value),

@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir -p _site
           cp dashboard/index.html dashboard/data.js dashboard/chart.umd.min.js _site/
-          cp dashboard/bpmn-viewer.production.min.js dashboard/diagram-js.css _site/
+          cp dashboard/bpmn-viewer.production.min.js dashboard/diagram-js.css dashboard/milad-shabani.jpg _site/
 
       - uses: actions/configure-pages@v5
         with:

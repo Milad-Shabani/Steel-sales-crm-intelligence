@@ -53,6 +53,21 @@
   .flow span.node.hot{background:var(--orange-soft); border-color:#FBD3B8; color:#B4480E;}
   .flow span.arrow{color:var(--faint);}
 
+  .head-grid{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:36px; align-items:start;}
+  .author{position:relative; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px 20px 18px; overflow:hidden; margin-top:6px;}
+  .author::before{content:""; position:absolute; left:0; right:0; top:0; height:5px; background:linear-gradient(90deg, var(--navy), var(--steel) 45%, var(--orange));}
+  .author .me{display:flex; align-items:center; gap:14px;}
+  .author img{width:76px; height:76px; border-radius:50%; object-fit:cover; flex:none; border:3px solid #fff; box-shadow:0 0 0 2px var(--orange), 0 4px 12px rgba(11,37,69,.18);}
+  .author .by{display:block; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--orange);}
+  .author strong{display:block; font-family:'Manrope', sans-serif; font-weight:800; font-size:19px; color:var(--navy); line-height:1.2; margin-top:2px;}
+  .author .role{display:block; font-size:12.5px; color:var(--dim); margin-top:2px;}
+  .author p{font-size:12.8px; color:var(--dim); margin:14px 0 14px; line-height:1.55;}
+  .author .links{display:flex; flex-wrap:wrap; gap:6px;}
+  .author .links a{font:600 12px 'Inter', sans-serif; color:var(--steel); background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:5px 11px; text-decoration:none;}
+  .author .links a:hover{border-color:var(--orange); color:var(--orange);}
+  .author .links a.primary{background:var(--navy); border-color:var(--navy); color:#fff;}
+  .author .links a.primary:hover{background:var(--orange); border-color:var(--orange); color:#fff;}
+
   nav.subnav{position:sticky; top:0; z-index:40; background:rgba(255,255,255,.95); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);}
   nav.subnav .wrap{display:flex; gap:2px; overflow-x:auto; scrollbar-width:none;}
   nav.subnav .wrap::-webkit-scrollbar{display:none;}
@@ -203,6 +218,8 @@
   footer a{color:var(--steel);}
 
   @media (max-width: 1100px){
+    .head-grid{grid-template-columns:minmax(0,1fr); gap:22px;}
+    .author{max-width:560px;}
     .kpis{grid-template-columns:repeat(2, minmax(0,1fr));}
     .insights ol{grid-template-columns:minmax(0,1fr);}
     .model-strip{grid-template-columns:repeat(2, minmax(0,1fr));}
@@ -238,7 +255,8 @@
 <body>
 <div class="topbar"></div>
 <div class="wrap">
-  <header>
+  <header class="head-grid">
+    <div class="head-main">
     <div class="eyebrow">Ahanyar Steel Trading Co. · Marketing, Sales, CRM &amp; Operations</div>
     <h1>Fast quotes win steel deals. <em>The CRM's own probabilities don't know it.</em></h1>
     <p class="lede" id="lede"></p>
@@ -250,6 +268,24 @@
       <span class="node">Win model, analytics &amp; BPMN</span><span class="arrow">→</span>
       <span class="node hot">This dashboard</span>
     </div>
+    </div>
+    <aside class="author" aria-label="About the author">
+      <div class="me">
+        <img src="./milad-shabani.jpg" alt="Milad Shabani" width="76" height="76">
+        <div>
+          <span class="by">Designed &amp; built by</span>
+          <strong>Milad Shabani</strong>
+          <span class="role">Business Intelligence Engineer</span>
+        </div>
+      </div>
+      <p>The data model, the quality checks, the win model, the BPMN process models and this dashboard, end to end.</p>
+      <div class="links">
+        <a class="primary" href="https://miladshabani.ir/" target="_blank" rel="noopener">miladshabani.ir</a>
+        <a href="https://www.linkedin.com/in/milad-shabani97/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/Milad-Shabani" target="_blank" rel="noopener">GitHub</a>
+        <a href="mailto:milad.shabani6515@gmail.com">Email</a>
+      </div>
+    </aside>
   </header>
 </div>
 

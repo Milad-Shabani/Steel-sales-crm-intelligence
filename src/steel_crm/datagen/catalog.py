@@ -275,3 +275,82 @@ COMPETITORS = [
 # Construction slows in winter and around Nowruz (late March / early April)
 SEASONALITY = {1: 0.75, 2: 0.80, 3: 0.70, 4: 0.85, 5: 1.15, 6: 1.20,
                7: 1.20, 8: 1.15, 9: 1.10, 10: 1.05, 11: 0.95, 12: 0.85}
+
+# --------------------------------------------------------------------------
+# Warehouses and delivery (custom table ahn_shipment)
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Warehouse:
+    code: int  # ahn_shipment.ahn_warehouse option value
+    label: str
+    weighbridge_sd: float  # spread of loaded weight around the ordered tons
+    humid: bool = False  # coastal yard: sheet rusts if it waits
+
+
+WAREHOUSES = [
+    Warehouse(100000000, "Tehran - Shadabad", 0.0025),
+    Warehouse(100000001, "Isfahan", 0.0025),
+    Warehouse(100000002, "Ahvaz", 0.0055),  # older weighbridge
+    Warehouse(100000003, "Mashhad", 0.0030),
+    Warehouse(100000004, "Tabriz", 0.0030),
+    Warehouse(100000005, "Bandar Abbas", 0.0035, humid=True),
+]
+WAREHOUSE_BY_LABEL = {w.label: w for w in WAREHOUSES}
+
+# province: (serving warehouse, typical road hours from it)
+DELIVERY_ROUTES = {
+    "Tehran": ("Tehran - Shadabad", 5),
+    "Alborz": ("Tehran - Shadabad", 6),
+    "Mazandaran": ("Tehran - Shadabad", 10),
+    "Isfahan": ("Isfahan", 5),
+    "Khorasan Razavi": ("Mashhad", 6),
+    "East Azerbaijan": ("Tabriz", 6),
+    "Khuzestan": ("Ahvaz", 6),
+    "Fars": ("Isfahan", 14),
+    "Hormozgan": ("Bandar Abbas", 5),
+}
+SOURCING = {100000000: "From stock", 100000001: "Mill direct (IME purchase)"}
+CARRIERS = {100000000: "Own fleet", 100000001: "Barbari Sepehr", 100000002: "Tarabar Zagros",
+            100000003: "Customer pickup"}
+TRUCK_TONS = 24  # a loaded trailer
+WEIGHT_TOLERANCE = 0.005  # +/- 0.5% of ordered tons is accepted without a claim
+# promised delivery, working days after the order, by sourcing
+PROMISE_DAYS = {100000000: 5, 100000001: 6}
+
+# --------------------------------------------------------------------------
+# Customer service (Dynamics 365 Customer Service: incident)
+# --------------------------------------------------------------------------
+SERVICE_AGENTS = [("Leila Rahimi", "Customer Service Lead", 1.0), ("Babak Tavakoli", "Customer Service Agent", 1.3),
+                  ("Shirin Kamali", "Customer Service Agent", 0.9), ("Omid Farahani", "Customer Service Agent", 1.6)]
+
+# priority code: (label, first response hours, resolve hours) - the SLA
+PRIORITY_SLA = {1: ("High", 2, 48), 2: ("Normal", 4, 120), 3: ("Low", 8, 240)}
+
+
+@dataclass(frozen=True)
+class CaseCategory:
+    code: int  # incident.ahn_casecategory option value
+    label: str
+    casetype: int  # incident.casetypecode: 1 Question, 2 Problem, 3 Request
+    priority: int
+    queue: str  # who investigates
+    resolve_hours: float  # median hours to resolve
+    upheld: float  # probability the claim is accepted
+
+
+CASE_CATEGORIES = [
+    CaseCategory(100000000, "Weight discrepancy", 2, 1, "Warehouse", 40, 0.70),
+    CaseCategory(100000001, "Late delivery", 2, 2, "Logistics", 14, 0.35),
+    CaseCategory(100000002, "Quality / spec claim", 2, 2, "Quality", 80, 0.45),
+    CaseCategory(100000003, "Damaged or rusted material", 2, 1, "Quality", 32, 0.60),
+    CaseCategory(100000004, "Invoice dispute", 2, 2, "Finance", 80, 0.50),
+    CaseCategory(100000005, "Mill certificate request", 3, 3, "Quality", 14, 1.0),
+    CaseCategory(100000006, "Delivery change request", 3, 2, "Logistics", 6, 1.0),
+]
+CASE_BY_LABEL = {c.label: c for c in CASE_CATEGORIES}
+CASE_ORIGINS = {1: ("Phone", 0.55), 2: ("Email", 0.25), 3: ("Web", 0.20)}
+# incident.ahn_investigatingteam option values
+TEAMS = {"Customer Service": 100000000, "Warehouse": 100000001, "Logistics": 100000002, "Quality": 100000003,
+         "Finance": 100000004}

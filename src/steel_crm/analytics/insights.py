@@ -29,6 +29,7 @@ def build_insights(
     risk: dict,
     reps: pd.DataFrame,
     disc_margin: pd.DataFrame,
+    ops: dict | None = None,
 ) -> list[str]:
     out = []
 
@@ -106,5 +107,42 @@ def build_insights(
         out.append(
             f"{heavy['rep']} discounts {heavy['avg_discount']:.1%} on average against a team rate of {team_disc:.1%}, "
             f"about <b>{irr(cost)}</b> of margin in the last 12 months."
+        )
+    if ops:
+        out += _operations(ops)
+    return out
+
+
+def _operations(ops: dict) -> list[str]:
+    out = []
+    dlv, svc = ops["delivery"], ops["service"]
+    carriers = dlv["by_carrier"].set_index("carrier")
+    if "Own fleet" in carriers.index:
+        own = carriers.loc["Own fleet"]
+        hired = carriers.drop(index=[c for c in ("Own fleet", "Customer pickup") if c in carriers.index])
+        hired_on_time = (hired["on_time"] * hired["shipments"]).sum() / hired["shipments"].sum()
+        if own["on_time"] < hired_on_time:
+            out.append(
+                f"Trucks, not steel, hold up deliveries: loads wait a median <b>{dlv['kpi']['yard_hours'] / 24:.1f} "
+                f"days</b> in the yard. On the own fleet they wait {own['yard_hours'] / 24:.1f} days and arrive on "
+                f"time {own['on_time']:.0%} of the time; contracted carriers make {hired_on_time:.0%}. Overall "
+                f"{dlv['kpi']['otif']:.0%} of orders arrive on time and in full."
+            )
+    wh = dlv["by_warehouse"].set_index("warehouse")
+    worst = wh["in_full"].idxmin()
+    rest = wh.drop(index=worst)
+    rest_off = 1 - (rest["in_full"] * rest["shipments"]).sum() / rest["shipments"].sum()
+    if 1 - wh.loc[worst, "in_full"] > 2 * rest_off:
+        out.append(
+            f"The <b>{worst}</b> weighbridge puts {1 - wh.loc[worst, 'in_full']:.0%} of loads outside the 0.5% "
+            f"tolerance, against {rest_off:.0%} at the other warehouses. Weight discrepancies are the most common "
+            f"service case."
+        )
+    ch = svc["churn"]
+    if ch["breached"]["rate"] and ch["within_sla"]["rate"] and ch["breached"]["rate"] > ch["within_sla"]["rate"]:
+        out.append(
+            f"Regular customers whose claim missed its resolution SLA went quiet <b>{ch['breached']['rate']:.0%}</b> "
+            f"of the time; when the claim was settled within the SLA, {ch['within_sla']['rate']:.0%}. Customer "
+            f"service resolved {svc['kpi']['resolve_sla']:.0%} of cases on time in the last 12 months."
         )
     return out

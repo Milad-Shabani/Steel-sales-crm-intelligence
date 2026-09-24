@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light">
 <title>Ahanyar Steel Trading — Marketing, Sales &amp; CRM Intelligence</title>
-<meta name="description" content="Marketing, sales and CRM analytics for a steel trading company, built on a Microsoft Dynamics 365 Sales (Dataverse) export.">
+<meta name="description" content="Marketing, sales, CRM and operations analytics for a steel trading company, built on a Microsoft Dynamics 365 (Dataverse) export, with its lead-to-cash processes in BPMN.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./diagram-js.css">
 <script src="./chart.umd.min.js"></script>
+<script src="./bpmn-viewer.production.min.js"></script>
 <script src="./data.js"></script>
 <style>
   :root{
@@ -82,7 +84,7 @@
 
   .insights{margin-top:22px; background:linear-gradient(180deg, #FAFBFD, #FFFFFF); border:1px solid var(--line); border-radius:var(--radius); padding:18px 22px; box-shadow:var(--shadow);}
   .insights h3{font-family:'Manrope', sans-serif; font-weight:800; font-size:15px; color:var(--navy); margin:0 0 10px;}
-  .insights ol{margin:0; padding-left:20px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px 28px;}
+  .insights ol{margin:0; padding-left:28px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px 28px;}
   .insights li{font-size:13.5px; color:var(--dim); line-height:1.6; padding-left:4px;}
   .insights li::marker{color:var(--orange); font-weight:700;}
   .insights li b{color:var(--text);}
@@ -161,6 +163,42 @@
   .oc .sub{font-size:12.3px; color:var(--dim); margin-top:3px;}
   .oc .sub b{color:var(--text);}
 
+  /* Processes: lead-to-cash timeline and the BPMN viewer */
+  .l2c{display:flex; height:50px; border-radius:10px; overflow:hidden; margin:4px 0 10px; background:var(--grid);}
+  .l2c > div{display:flex; flex-direction:column; justify-content:center; padding:0 10px; color:#fff; min-width:0; overflow:hidden; white-space:nowrap; font-size:11.5px; line-height:1.25;}
+  .l2c > div b{font-family:'Manrope', sans-serif; font-size:14px;}
+  .l2c-legend{display:flex; flex-wrap:wrap; gap:6px 18px; font-size:12px; color:var(--dim);}
+  .l2c-legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px;}
+  .l2c-legend b{color:var(--text);}
+  .proc-head{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;}
+  .proc-tools{display:flex; gap:6px; flex-wrap:wrap;}
+  .proc-tools button, .proc-tools a{font:600 12.5px 'Inter', sans-serif; color:var(--steel); background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:6px 10px; cursor:pointer; text-decoration:none; line-height:1.2;}
+  .proc-tools button:hover, .proc-tools a:hover{border-color:var(--sky);}
+  .proc-stats{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; margin:6px 0 12px;}
+  .proc-stats .stat strong{font-size:19px;}
+  .stat em{display:block; font-style:normal; font-size:11.5px; color:var(--faint); margin-top:1px;}
+  .bpmn-wrap{position:relative; overflow:auto; max-height:660px; border:1px solid var(--line); border-radius:12px; background-color:#fff;
+    background-image:radial-gradient(#E6ECF3 1px, transparent 1px); background-size:18px 18px; -webkit-overflow-scrolling:touch;}
+  #bpmnCanvas{position:relative;}
+  #bpmnCanvas .bjs-powered-by{position:absolute; right:10px; bottom:8px; z-index:5;}
+  .bpmn-kpi{font:700 11px 'Inter', sans-serif; background:var(--navy); color:#fff; border-radius:999px; padding:2px 8px; white-space:nowrap; box-shadow:0 1px 3px rgba(11,37,69,.25); cursor:pointer;}
+  .bpmn-kpi.hot{background:var(--orange);}
+  .djs-element.picked .djs-visual > :first-child{stroke:#F26B1D !important; stroke-width:3px !important;}
+  .proc-legend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--faint); margin-top:8px;}
+  .proc-legend .bpmn-kpi{display:inline-block; cursor:default; margin-right:4px;}
+  .step-info{margin-top:12px; background:var(--panel-2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:13px; color:var(--dim); min-height:64px;}
+  .step-info h4{font-family:'Manrope', sans-serif; font-size:14.5px; color:var(--navy); margin:0 0 4px;}
+  .step-info code{background:#fff; border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:12px; color:var(--steel);}
+  .step-info .kpiline{margin-top:6px; color:var(--text);}
+  .step-info .kpiline b{color:var(--orange);}
+  /* Service and churn */
+  .churn .row{display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 52px; gap:10px; align-items:center; margin:12px 0; font-size:13px; color:var(--dim);}
+  .churn .row b{color:var(--text);}
+  .churn .bar{display:block; width:auto; margin:0; height:14px; background:var(--grid); border-radius:7px; overflow:hidden;}
+  .churn .bar i{display:block; height:100%; border-radius:7px;}
+  .churn .v{text-align:right; font-family:'Manrope', sans-serif; font-weight:800; color:var(--navy);}
+  .churn .note{font-size:12px; color:var(--faint); margin-top:4px;}
+
   footer{border-top:1px solid var(--line); margin-top:30px; padding:24px 0 48px; font-size:12.5px; color:var(--faint); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;}
   footer a{color:var(--steel);}
 
@@ -168,6 +206,7 @@
     .kpis{grid-template-columns:repeat(2, minmax(0,1fr));}
     .insights ol{grid-template-columns:minmax(0,1fr);}
     .model-strip{grid-template-columns:repeat(2, minmax(0,1fr));}
+    .proc-stats{grid-template-columns:repeat(2, minmax(0,1fr));}
     .grid, .grid.wide-left{grid-template-columns:minmax(0,1fr);}
   }
   @media (max-width: 900px){
@@ -187,6 +226,8 @@
     .card{padding:14px 12px 10px;}
     .chart-box, .chart-box.tall{height:270px;}
     .chart-box.rows{height:380px;}
+    .bpmn-wrap{max-height:520px;}
+    .l2c > div span{display:none;}
     .table-scroll td{white-space:nowrap;}
     .table-scroll th:first-child, .table-scroll td:first-child{position:sticky; left:0; z-index:1; box-shadow:1px 0 0 var(--line);}
     .table-scroll td:first-child{background:#fff; white-space:normal; min-width:140px; max-width:170px;}
@@ -198,15 +239,15 @@
 <div class="topbar"></div>
 <div class="wrap">
   <header>
-    <div class="eyebrow">Ahanyar Steel Trading Co. · Marketing, Sales &amp; CRM</div>
+    <div class="eyebrow">Ahanyar Steel Trading Co. · Marketing, Sales, CRM &amp; Operations</div>
     <h1>Fast quotes win steel deals. <em>The CRM's own probabilities don't know it.</em></h1>
     <p class="lede" id="lede"></p>
     <div class="flow">
-      <span class="node hot">Dynamics 365 Sales</span><span class="arrow">→</span>
+      <span class="node hot">Dynamics 365 Sales + Customer Service</span><span class="arrow">→</span>
       <span class="node">Dataverse export + metadata</span><span class="arrow">→</span>
       <span class="node">Decode &amp; quality checks</span><span class="arrow">→</span>
       <span class="node">Star schema · SQLite + Power BI</span><span class="arrow">→</span>
-      <span class="node">Win model &amp; analytics</span><span class="arrow">→</span>
+      <span class="node">Win model, analytics &amp; BPMN</span><span class="arrow">→</span>
       <span class="node hot">This dashboard</span>
     </div>
   </header>
@@ -216,12 +257,15 @@
   <div class="wrap">
     <a href="#overview">Overview</a>
     <a href="#funnel">Sales Funnel</a>
+    <a href="#processes">Processes (BPMN)</a>
     <a href="#market">Market &amp; Margin</a>
     <a href="#marketing">Marketing</a>
     <a href="#pipeline">Pipeline &amp; Win Model</a>
     <a href="#winloss">Win / Loss</a>
     <a href="#team">Sales Team</a>
+    <a href="#delivery">Delivery</a>
     <a href="#customers">Customers &amp; Credit</a>
+    <a href="#service">Service</a>
   </div>
 </nav>
 
@@ -249,6 +293,35 @@
       <p class="take" id="takeFunnel"></p>
       <div class="funnel" id="funnelSteps"></div>
       <div class="outcome" id="funnelOutcome"></div>
+    </div>
+  </section>
+
+  <section id="processes">
+    <div class="section-head">
+      <h2>Processes (BPMN)<small>How an order moves through Dynamics 365, from lead to cash and after-sales service, with the export's numbers on every step</small></h2>
+      <div class="section-note">Modelled in BPMN 2.0: download a diagram and open it in Camunda Modeler or bpmn.io. Numbers cover the last 12 months.</div>
+    </div>
+    <div class="card" style="margin-bottom:18px">
+      <h3>Lead to cash, in days</h3>
+      <p class="take" id="takeL2C"></p>
+      <div class="l2c" id="l2cBar"></div>
+      <div class="l2c-legend" id="l2cLegend"></div>
+    </div>
+    <div class="card">
+      <div class="proc-head">
+        <div class="funnel-tabs proc-tabs" role="tablist" aria-label="Process"></div>
+        <div class="proc-tools">
+          <button type="button" data-zoom="out" aria-label="Zoom out">−</button>
+          <button type="button" data-zoom="fit">Fit</button>
+          <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+          <a id="procDownload" href="#" download>Download .bpmn</a>
+        </div>
+      </div>
+      <p class="take" id="procDesc"></p>
+      <div class="proc-stats" id="procStats"></div>
+      <div class="bpmn-wrap" id="bpmnWrap"><div id="bpmnCanvas"></div></div>
+      <div class="proc-legend"><span><span class="bpmn-kpi">11 h</span>what the export says about a step</span><span><span class="bpmn-kpi hot">2.4 days</span>where time or money leaks</span><span>Click a step for its Dynamics 365 table; scroll or drag to move around.</span></div>
+      <div class="step-info" id="stepInfo"></div>
     </div>
   </section>
 
@@ -386,6 +459,39 @@
     </div>
   </section>
 
+  <section id="delivery">
+    <div class="section-head">
+      <h2>Delivery<small>From the order to a signed proof of delivery: the warehouse, the trucks and the weighbridge</small></h2>
+      <div class="section-note" id="dlvNote"></div>
+    </div>
+    <div class="model-strip" id="dlvStrip"></div>
+    <div class="grid">
+      <div class="card">
+        <h3>Where the days go, by sourcing</h3>
+        <p class="take" id="takePhase"></p>
+        <div class="chart-box short"><canvas id="phaseChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>On time by carrier</h3>
+        <p class="take" id="takeCarrier"></p>
+        <div class="chart-box short"><canvas id="carrierChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Weighbridge: loaded against ordered tons</h3>
+        <p class="take" id="takeWeight"></p>
+        <div class="chart-box short"><canvas id="weightChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Warehouses</h3>
+        <p class="take" id="takeWh"></p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Warehouse</th><th class="num">Orders</th><th class="num">Tons</th><th class="num">Days</th><th class="num">On time</th><th class="num">In full</th><th class="num">OTIF</th></tr></thead>
+          <tbody id="whTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
   <section id="customers">
     <div class="section-head">
       <h2>Customers &amp; credit<small>Who buys, who has gone quiet, and who owes money</small></h2>
@@ -427,6 +533,47 @@
     </div>
   </section>
 
+  <section id="service">
+    <div class="section-head">
+      <h2>Customer service<small>Dynamics 365 Customer Service cases after delivery: claims, requests, SLAs and satisfaction</small></h2>
+      <div class="section-note">Cases opened in the last 12 months. SLA by priority: first response in 2, 4 or 8 hours; resolved in 2, 5 or 10 days.</div>
+    </div>
+    <div class="model-strip" id="svcStrip"></div>
+    <div class="grid">
+      <div class="card">
+        <h3>Cases by category</h3>
+        <p class="take" id="takeCases"></p>
+        <div class="chart-box short rows"><canvas id="caseChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Service and churn</h3>
+        <p class="take" id="takeChurn"></p>
+        <div class="churn" id="churn"></div>
+      </div>
+      <div class="card full">
+        <h3>Claims and requests</h3>
+        <p class="take">Median hours to resolve, share resolved within the SLA, claims upheld, and credit notes or replacements given.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Category</th><th>Team</th><th class="num">Cases</th><th class="num">Time</th><th class="num">In SLA</th><th class="num">Upheld</th><th class="num">Credit</th><th class="num">CSAT</th></tr></thead>
+          <tbody id="caseTable"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>Agents</h3>
+        <p class="take" id="takeAgents"></p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Agent</th><th class="num">Cases</th><th class="num">First reply</th><th class="num">Reply in SLA</th><th class="num">Resolved in SLA</th><th class="num">CSAT</th></tr></thead>
+          <tbody id="agentTable"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>Satisfaction survey</h3>
+        <p class="take" id="takeCsat"></p>
+        <div class="chart-box short"><canvas id="csatChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
 </main>
 <footer>
   <span id="footData"></span>
@@ -435,7 +582,7 @@
 </div>
 
 <script>
-const D = DASHBOARD_DATA, K = D.kpi;
+const D = DASHBOARD_DATA, K = D.kpi, OPS = D.operations, DL = OPS.delivery, SV = OPS.service;
 const C = {navy:'#0B2545', steel:'#134074', blue:'#2F6DB5', sky:'#8DA9C4', orange:'#F26B1D', amber:'#F4A259', teal:'#14A38B', red:'#D64545', grid:'#EEF2F6', faint:'#8A96A8', pale:'#D6E0EA'};
 const nf = new Intl.NumberFormat('en-US');
 const fmt = n => nf.format(Math.round(n));
@@ -468,9 +615,11 @@ function spark(values, color) {
 // ------------------------------------------------------------------ header and KPIs
 const M = D.monthly;
 document.getElementById('lede').innerHTML =
-  `Built on a <b>Microsoft Dynamics 365 Sales export</b>: ${D.data_quality.tables} Dataverse tables, ${fmt(D.data_quality.rows)} rows, ` +
-  `${D.data_quality.passed} of ${D.data_quality.checks} data-quality checks passed. Leads, opportunities, quotes, orders, invoices, ` +
-  `campaigns and activities for a steel trader, modelled into a star schema. Figures cover the 12 months to <b>${dateLabel(D.as_of)}</b> unless stated.`;
+  `Built on a <b>Microsoft Dynamics 365 export</b> (Sales, Customer Service and a custom shipment table): ${D.data_quality.tables} Dataverse tables, ` +
+  `${fmt(D.data_quality.rows)} rows, ${D.data_quality.passed} of ${D.data_quality.checks} data-quality checks passed` +
+  `${D.data_quality.warnings ? ` and ${D.data_quality.warnings} warning` : ''}. Leads, opportunities, quotes, orders, shipments, invoices, ` +
+  `service cases and campaigns for a steel trader, modelled into a star schema, with its lead-to-cash processes drawn in BPMN. ` +
+  `Figures cover the 12 months to <b>${dateLabel(D.as_of)}</b> unless stated.`;
 const kpis = [
   {label:'Revenue', num: irr(K.revenue), d: delta(K.revenue_delta), sub: fmt(K.orders) + ' orders from ' + fmt(K.active_customers) + ' customers', spark: spark(M.slice(-12).map(m => m.revenue), C.steel)},
   {label:'Steel sold', num: fmt(K.tons) + ' t', d: delta(K.tons_delta), sub: 'avg ' + fmt(K.tons / K.orders) + ' t per order', spark: spark(M.slice(-12).map(m => m.tons), C.blue)},
@@ -480,6 +629,10 @@ const kpis = [
   {label:'Marketing ROI (customer lifetime)', num: (K.marketing_roi + 1).toFixed(1) + 'x', sub: 'margin per rial on ' + irr(K.marketing_spend) + ' spend', tone:'good'},
   {label:'Days sales outstanding', num: Math.round(K.dso) + ' days', sub: pct(K.overdue_share) + ' of ' + irr(K.open_ar) + ' receivables overdue', tone: K.overdue_share > 0.2 ? 'risk' : ''},
   {label:'Hours to first quote (median)', num: Math.round(K.median_hours_to_quote) + ' h', sub: pct(K.quoted_within_24h) + ' of deals quoted within a day', tone:'hot'},
+  {label:'On time in full', num: pct(DL.otif), sub: pct(DL.on_time) + ' on time · ' + pct(DL.in_full) + ' within 0.5% of the tons', tone: DL.otif < 0.8 ? 'hot' : 'good'},
+  {label:'Order to delivery (median)', num: DL.days_to_deliver.toFixed(1) + ' days', sub: 'loads wait ' + (DL.yard_hours / 24).toFixed(1) + ' days in the yard for a truck'},
+  {label:'Service cases', num: fmt(SV.cases), sub: SV.per_100_deliveries.toFixed(0) + ' per 100 deliveries · ' + pct(SV.upheld) + ' of claims upheld'},
+  {label:'Cases resolved within SLA', num: pct(SV.resolve_sla), sub: 'satisfaction ' + SV.csat.toFixed(1) + ' / 5 · first reply ' + SV.first_response_hours.toFixed(1) + ' h', tone: SV.resolve_sla < 0.85 ? 'risk' : 'good'},
 ];
 document.getElementById('kpis').innerHTML = kpis.map(k =>
   `<div class="kpi ${k.tone || ''}"><div class="label">${k.label}</div><div class="num">${k.num}${k.d || ''}</div><div class="sub">${k.sub}</div>${k.spark || ''}</div>`).join('');
@@ -546,6 +699,54 @@ document.getElementById('modelStrip').innerHTML = [
 ].map(([l, v, o]) => `<div class="stat"><span>${l}</span><strong class="${o ? 'orange' : ''}">${v}</strong></div>`).join('');
 document.getElementById('modelNote').textContent = `Trained on ${fmt(mm.n_train)} deals closed before ${dateLabel(mm.split_date)}, tested on the ${fmt(mm.n_test)} closed after. Higher AUC ranks winners better; lower Brier is better calibrated.`;
 document.getElementById('footData').textContent = `Synthetic Dynamics 365 export · ${D.data_quality.tables} tables · ${fmt(D.data_quality.rows)} rows · Ahanyar Steel Trading Co. is fictional`;
+
+// ------------------------------------------------------------------ delivery and service: strips and tables
+const stat = (label, value, note, orange) => `<div class="stat"><span>${label}</span><strong class="${orange ? 'orange' : ''}">${value}</strong>${note ? `<em>${note}</em>` : ''}</div>`;
+const days = h => (h / 24).toFixed(1) + ' days';
+document.getElementById('dlvNote').textContent = `Orders of the last 12 months. On time: delivered by the promised date (salesorder.requestdeliveryby). In full: the weighbridge weight within ${pct(OPS.tolerance, 1)} of the ordered tons.`;
+document.getElementById('dlvStrip').innerHTML = [
+  stat('Orders delivered', fmt(DL.shipments), fmt(DL.tons) + ' t on ' + fmt(DL.truckloads) + ' truckloads'),
+  stat('On time', pct(DL.on_time), 'promised in ' + DL.promise_days.toFixed(0) + ' days (median)'),
+  stat('In full', pct(DL.in_full), 'POD signed on ' + pct(DL.pod)),
+  stat('On time in full', pct(DL.otif), 'median ' + DL.days_to_deliver.toFixed(1) + ' days from order', true),
+].join('');
+const WHS = OPS.by_warehouse, worstWh = WHS.reduce((a, b) => a.in_full < b.in_full ? a : b);
+document.getElementById('whTable').innerHTML = WHS.map(w => `<tr>
+  <td class="name">${esc(w.warehouse)}</td><td class="num">${fmt(w.shipments)}</td><td class="num">${fmt(w.tons)}</td><td class="num">${w.days.toFixed(1)}</td>
+  <td class="num">${pct(w.on_time)}</td><td class="num"><span class="pill ${w.in_full < 0.85 ? 'bad' : w.in_full < 0.92 ? 'warn' : 'good'}">${pct(w.in_full)}</span></td>
+  <td class="num"><b>${pct(w.otif)}</b></td></tr>`).join('');
+document.getElementById('takeWh').innerHTML = `Each province is served by its nearest warehouse. <b>${esc(worstWh.warehouse)}</b> loads are in full only ${pct(worstWh.in_full)} of the time: its weighbridge reads loose.`;
+
+document.getElementById('svcStrip').innerHTML = [
+  stat('Cases opened', fmt(SV.cases), SV.per_100_deliveries.toFixed(0) + ' per 100 deliveries · ' + SV.open + ' still open'),
+  stat('First reply within SLA', pct(SV.response_sla), 'median ' + SV.first_response_hours.toFixed(1) + ' h'),
+  stat('Resolved within SLA', pct(SV.resolve_sla), pct(SV.escalated) + ' escalated · median ' + days(SV.resolve_hours), SV.resolve_sla < 0.85),
+  stat('Satisfaction', SV.csat.toFixed(1) + ' / 5', pct(SV.csat_responses) + ' answered the survey'),
+].join('');
+const CAT = OPS.by_category;
+document.getElementById('caseTable').innerHTML = CAT.map(c => `<tr>
+  <td class="name">${esc(c.category)}</td><td>${esc(c.team)}</td><td class="num">${fmt(c.cases)}</td>
+  <td class="num">${c.hours < 48 ? Math.round(c.hours) + ' h' : days(c.hours)}</td>
+  <td class="num"><span class="pill ${c.resolve_sla >= 0.9 ? 'good' : c.resolve_sla >= 0.7 ? 'warn' : 'bad'}">${pct(c.resolve_sla)}</span></td>
+  <td class="num">${c.upheld == null ? '—' : pct(c.upheld)}</td><td class="num">${c.compensation ? irr(c.compensation, false) : '—'}</td>
+  <td class="num">${c.csat == null ? '—' : c.csat.toFixed(1)}</td></tr>`).join('');
+const AG2 = OPS.by_agent;
+document.getElementById('agentTable').innerHTML = AG2.map(a => `<tr>
+  <td class="name">${esc(a.owner)}</td><td class="num">${fmt(a.cases)}</td><td class="num">${a.first_response.toFixed(1)} h</td>
+  <td class="num"><span class="pill ${a.response_sla >= 0.9 ? 'good' : a.response_sla >= 0.8 ? 'warn' : 'bad'}">${pct(a.response_sla)}</span></td>
+  <td class="num"><span class="pill ${a.resolve_sla >= 0.8 ? 'good' : a.resolve_sla >= 0.7 ? 'warn' : 'bad'}">${pct(a.resolve_sla)}</span></td>
+  <td class="num">${a.csat == null ? '—' : a.csat.toFixed(1)}</td></tr>`).join('');
+const bestAgent = AG2.reduce((a, b) => a.resolve_sla > b.resolve_sla ? a : b), worstAgent = AG2.reduce((a, b) => a.resolve_sla < b.resolve_sla ? a : b);
+document.getElementById('takeAgents').innerHTML = `<b>${esc(bestAgent.owner)}</b> resolves ${pct(bestAgent.resolve_sla)} of cases within the SLA; ${esc(worstAgent.owner)} ${pct(worstAgent.resolve_sla)}.`;
+const CH = OPS.churn;
+const churnRows = [['Claim missed its SLA', CH.breached, C.red], ['Claim settled within the SLA', CH.within_sla, C.teal], ['No claim', CH.no_claim, C.sky]];
+const churnMax = Math.max(...churnRows.map(r => r[1].rate || 0));
+document.getElementById('churn').innerHTML = churnRows.map(([l, g, col]) => `<div class="row"><span><b>${l}</b><br>${fmt(g.customers)} regular customers</span>
+  <span class="bar"><i style="width:${((g.rate || 0) / churnMax * 100).toFixed(0)}%; background:${col}"></i></span><span class="v">${pct(g.rate)}</span></div>`).join('') +
+  `<div class="note">Share of regular customers (3+ orders) that have gone quiet: silent for more than 2.5x their usual reorder gap.</div>`;
+document.getElementById('takeChurn').innerHTML = CH.breached.rate > CH.within_sla.rate
+  ? `Customers whose claim dragged past its SLA went quiet <b>${pct(CH.breached.rate)}</b> of the time, ${(CH.breached.rate / CH.within_sla.rate).toFixed(1)}x the rate when the claim was settled on time.`
+  : `Claims settled late and on time end in similar churn.`;
 
 // ------------------------------------------------------------------ charts
 function renderCharts() {
@@ -749,6 +950,66 @@ new Chart(document.getElementById('provChart'), {
     scales:{x:{grid: g, title:{display:true, text:'T IRR'}}, y: catAxis()}}
 });
 document.getElementById('takeProv').innerHTML = `<b>${esc(PR[0].province)}</b> brings ${pct(PR[0].revenue / PR.reduce((s, p) => s + p.revenue, 0))} of revenue from ${PR[0].customers} customers.`;
+
+// delivery: phases by sourcing
+const SRC = OPS.by_sourcing;
+const phaseDefs = [['hours_to_ready', 'Stock ready / mill releases', C.sky], ['yard_hours', 'Waiting for a truck', C.orange], ['loading_hours', 'Loading and waybill', C.pale], ['transit_hours', 'On the road', C.steel]];
+new Chart(document.getElementById('phaseChart'), {
+  type:'bar',
+  data:{labels: SRC.map(s => s.sourcing.replace(' (IME purchase)', '')), datasets: phaseDefs.map(([k, l, col]) => ({label: l, data: SRC.map(s => s[k] / 24), backgroundColor: col, borderRadius: 3}))},
+  options:{indexAxis:'y', plugins:{legend:{position:'top', align:'start', labels:{font:{size:11}}}, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + (c.parsed.x < 1 ? (c.parsed.x * 24).toFixed(1) + ' h' : c.parsed.x.toFixed(1) + ' days')}}},
+    scales:{x:{stacked: true, grid: g, title:{display:true, text:'Median days'}}, y:{...catAxis(), stacked: true}}}
+});
+const stockRow = SRC.find(s => s.sourcing === 'From stock'), millRow = SRC.find(s => s.sourcing !== 'From stock');
+document.getElementById('takePhase').innerHTML = `Stock is reserved in ${stockRow.hours_to_ready.toFixed(0)} hours, then the load waits <b>${days(stockRow.yard_hours)}</b> for a truck. Mill-direct loads wait ${days(millRow.hours_to_ready)} for the mill, but the truck is booked meanwhile.`;
+
+// delivery: carriers
+const CR = OPS.by_carrier;
+new Chart(document.getElementById('carrierChart'), {
+  data:{labels: CR.map(c => c.carrier), datasets:[
+    {type:'bar', label:'On time', data: CR.map(c => c.on_time * 100), backgroundColor: CR.map(c => c.carrier === 'Own fleet' ? C.orange : C.steel), borderRadius: 4, yAxisID:'y', maxBarThickness: 56},
+    {type:'line', label:'Days in the yard', data: CR.map(c => c.yard_hours / 24), borderColor: C.navy, backgroundColor: C.navy, pointRadius: 4, borderWidth: 2, yAxisID:'y2'},
+  ]},
+  options:{interaction:{mode:'index', intersect:false}, plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.yAxisID === 'y' ? 'On time: ' + c.parsed.y.toFixed(0) + '% of ' + fmt(CR[c.dataIndex].shipments) : 'Yard: ' + c.parsed.y.toFixed(1) + ' days'}}},
+    scales:{x: catAxis(10), y:{...pctAxis, max: 100}, y2:{position:'right', grid:{display:false}, beginAtZero: true, title:{display:true, text:'Days in the yard'}}}}
+});
+const own = CR.find(c => c.carrier === 'Own fleet'), hired = CR.filter(c => c.carrier !== 'Own fleet' && c.carrier !== 'Customer pickup');
+const hiredOnTime = hired.reduce((s, c) => s + c.on_time * c.shipments, 0) / hired.reduce((s, c) => s + c.shipments, 0);
+document.getElementById('takeCarrier').innerHTML = `The own fleet carries ${pct(own.shipments / DL.shipments)} of orders, but its loads wait ${days(own.yard_hours)} and arrive on time <b>${pct(own.on_time)}</b> of the time; contracted carriers ${pct(hiredOnTime)}.`;
+
+// delivery: weighbridge histogram
+const WH2 = OPS.weight_hist, tol = OPS.tolerance;
+new Chart(document.getElementById('weightChart'), {
+  type:'bar',
+  data:{labels: WH2.map(b => (b.from >= 0 ? '+' : '') + (b.from * 100).toFixed(2) + '%'), datasets:[{data: WH2.map(b => b.loads),
+    backgroundColor: WH2.map(b => (b.from >= -tol - 1e-9 && b.to <= tol + 1e-9) ? C.steel : C.orange), borderRadius: 3, barPercentage: 0.95, categoryPercentage: 0.95}]},
+  options:{plugins:{legend:{display:false}, tooltip:{callbacks:{title: c => { const b = WH2[c[0].dataIndex]; return (b.from * 100).toFixed(2) + '% to ' + (b.to * 100).toFixed(2) + '%'; }, label: c => fmt(c.parsed.y) + ' loads'}}},
+    scales:{x:{grid:{display:false}, ticks:{maxRotation: 0, autoSkip: true, maxTicksLimit: 7}, title:{display:true, text:'Loaded tons against ordered (left edge of each bin)'}}, y:{grid: g, beginAtZero: true}}}
+});
+document.getElementById('takeWeight').innerHTML = `${pct(DL.in_full)} of loads land within ${pct(tol, 1)} of the ordered tons (blue); the rest (orange) raise weight claims. Median gap ${(DL.weight_variance * 100).toFixed(2)}%.`;
+
+// service: cases by category, within / outside the SLA
+new Chart(document.getElementById('caseChart'), {
+  type:'bar',
+  data:{labels: CAT.map(c => c.category), datasets:[
+    {label:'Resolved within SLA', data: CAT.map(c => Math.round(c.cases * (c.resolve_sla ?? 0))), backgroundColor: C.teal, borderRadius: 3},
+    {label:'Missed the SLA or open', data: CAT.map(c => c.cases - Math.round(c.cases * (c.resolve_sla ?? 0))), backgroundColor: C.red, borderRadius: 3},
+  ]},
+  options:{indexAxis:'y', plugins:{legend:{position:'top', align:'start', labels:{font:{size:11}}}},
+    scales:{x:{stacked: true, grid: g, beginAtZero: true, title:{display:true, text:'Cases'}}, y:{...catAxis(), stacked: true}}}
+});
+const CS = OPS.csat, csatLabels = ['Very dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very satisfied'];
+new Chart(document.getElementById('csatChart'), {
+  type:'bar',
+  data:{labels: CS.map(c => c.score + ' · ' + csatLabels[c.score - 1]), datasets:[{data: CS.map(c => c.responses), backgroundColor: [C.red, '#E8906F', C.pale, C.sky, C.teal], borderRadius: 4, maxBarThickness: 64}]},
+  options:{plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => fmt(c.parsed.y) + ' answers'}}},
+    scales:{x:{grid:{display:false}, ticks:{maxRotation: 0, callback(v) { return this.chart.width < 520 ? String(CS[v].score) : this.getLabelForValue(v); }},
+      title:{display:true, text:'Score: 1 = very dissatisfied, 5 = very satisfied'}}, y:{grid: g, beginAtZero: true, title:{display:true, text:'Answers'}}}}
+});
+const csatTotal = CS.reduce((s, c) => s + c.responses, 0), csatLow = CS.filter(c => c.score <= 2).reduce((s, c) => s + c.responses, 0);
+document.getElementById('takeCsat').innerHTML = `Customer Voice survey after each resolved case: average <b>${SV.csat.toFixed(1)} / 5</b> from ${fmt(csatTotal)} answers; ${pct(csatLow / csatTotal)} unhappy` + (SV.unhappy_after_bad_claim != null ? `, ${pct(SV.unhappy_after_bad_claim)} of them after a claim that missed its SLA or was turned down.` : '.');
+const slowCat = CAT.filter(c => c.cases >= 10).reduce((a, b) => a.resolve_sla < b.resolve_sla ? a : b);
+document.getElementById('takeCases').innerHTML = `<b>${esc(CAT[0].category)}</b> is the most common case (${pct(CAT[0].share)}). <b>${esc(slowCat.category)}</b> misses its SLA most: ${pct(1 - slowCat.resolve_sla)} of cases, because the claim goes back to the mill.`;
 }
 
 // ------------------------------------------------------------------ sales funnel (plain HTML/CSS, no Chart.js needed)
@@ -810,6 +1071,93 @@ document.querySelectorAll('.funnel-tabs button').forEach(b => b.addEventListener
   renderFunnel(b.dataset.view);
 }));
 renderFunnel('new_business');
+
+// ------------------------------------------------------------------ processes: lead-to-cash timeline and the BPMN viewer
+const L2C = OPS.lead_to_cash, l2cColors = [C.sky, C.blue, C.steel, C.orange, C.navy];
+const l2cTotal = L2C.phases.reduce((s, p) => s + p.days, 0);
+document.getElementById('l2cBar').innerHTML = L2C.phases.map((p, i) => `<div style="flex:${Math.max(p.days, l2cTotal * 0.035)}; background:${l2cColors[i]}" title="${esc(p.phase)}: ${p.days.toFixed(1)} days"><b>${p.days < 1 ? (p.days * 24).toFixed(0) + ' h' : p.days.toFixed(0) + ' d'}</b>${p.days / l2cTotal > 0.07 ? `<span>${esc(p.phase)}</span>` : ''}</div>`).join('');
+document.getElementById('l2cLegend').innerHTML = L2C.phases.map((p, i) => `<span><i style="background:${l2cColors[i]}"></i>${esc(p.phase)} <b>${p.days < 1 ? (p.days * 24).toFixed(0) + ' h' : p.days.toFixed(1) + ' days'}</b></span>`).join('');
+const slowest = L2C.phases.reduce((a, b) => a.days > b.days ? a : b);
+document.getElementById('takeL2C').innerHTML = `Median time in each phase. A new customer's first order takes <b>${L2C.end_to_end_days.toFixed(0)} days</b> from lead to cash in the bank (${fmt(L2C.end_to_end_deals)} deals paid in the last 12 months); <b>${esc(slowest.phase.toLowerCase())}</b> is the longest wait.`;
+
+const PROC_STATS = {
+  lead_to_order: ['l2o_start', 'l2o_qualify', 'l2o_price', 'l2o_accepts'],
+  order_to_delivery: ['o2d_start', 'o2d_truck', 'o2d_gw_weight', 'o2d_end'],
+  invoice_to_cash: ['i2c_send', 'i2c_paid', 'i2c_match', 'i2c_end'],
+  case_to_resolution: ['c2r_start', 'c2r_respond', 'c2r_resolve', 'c2r_survey'],
+};
+const TYPE_LABEL = {userTask:'User task', serviceTask:'Service task', sendTask:'Send task', businessRuleTask:'Business rule task', startEvent:'Start event', endEvent:'End event', intermediateCatchEvent:'Intermediate event', boundaryEvent:'Boundary event (non-interrupting)', exclusiveGateway:'Exclusive gateway', eventBasedGateway:'Event-based gateway'};
+const tabs = document.querySelector('.proc-tabs');
+tabs.innerHTML = D.processes.map((p, i) => `<button type="button" class="${i ? '' : 'on'}" data-proc="${p.id}" role="tab" aria-selected="${!i}">${esc(p.name)}</button>`).join('');
+let viewer = null, proc = null, zoom = null, inner = null, picked = null;
+const wrap = document.getElementById('bpmnWrap'), canvasEl = document.getElementById('bpmnCanvas');
+const infoDefault = '<h4>Click a step</h4>Each task, event and gateway names the Dynamics 365 table it reads or writes, and what the export says about it.';
+
+function applyZoom(z) {
+  if (!inner) return;
+  zoom = Math.min(1.6, Math.max(0.3, z));
+  const pad = 30, w = inner.width + 2 * pad, h = inner.height + 2 * pad;
+  canvasEl.style.width = Math.ceil(w * zoom) + 'px';
+  canvasEl.style.height = Math.ceil(h * zoom) + 'px';
+  const cv = viewer.get('canvas');
+  cv.resized();
+  cv.viewbox({x: inner.x - pad, y: inner.y - pad, width: w, height: h});
+}
+const fitZoom = () => (wrap.clientWidth - 2) / (inner.width + 60);
+function showStep(id) {
+  const s = proc.steps[id], info = document.getElementById('stepInfo');
+  if (picked) viewer.get('canvas').removeMarker(picked, 'picked');
+  picked = null;
+  if (!s) { info.innerHTML = infoDefault; return; }
+  viewer.get('canvas').addMarker(id, 'picked'); picked = id;
+  info.innerHTML = `<h4>${esc(s.name || TYPE_LABEL[s.type] || s.type)}</h4>${TYPE_LABEL[s.type] || s.type} · lane <b>${esc(s.lane)}</b>` +
+    (s.table ? ` · Dataverse table <code>${esc(s.table)}</code>` : '') +
+    (s.doc ? `<div>${esc(s.doc)}</div>` : '') +
+    (s.kpi ? `<div class="kpiline"><b>${esc(s.kpi.value)}</b> ${esc(s.kpi.note)}</div>` : '');
+}
+async function showProcess(id) {
+  proc = D.processes.find(p => p.id === id);
+  document.getElementById('procDesc').textContent = proc.description;
+  document.getElementById('procStats').innerHTML = PROC_STATS[id].map(n => proc.steps[n]).filter(s => s && s.kpi)
+    .map(s => stat(esc(s.name || 'Step'), esc(s.kpi.value), esc(s.kpi.note), s.kpi.tone === 'hot')).join('');
+  const dl = document.getElementById('procDownload');
+  if (dl.dataset.url) URL.revokeObjectURL(dl.dataset.url);
+  dl.dataset.url = URL.createObjectURL(new Blob([proc.xml], {type: 'application/xml'}));
+  dl.href = dl.dataset.url; dl.download = proc.id + '.bpmn';
+  if (typeof BpmnJS === 'undefined') { wrap.innerHTML = '<p class="take" style="padding:16px">The BPMN viewer could not load (bpmn-viewer.production.min.js is missing or blocked). Download the .bpmn file to open it in a modeler.</p>'; return; }
+  if (!viewer) {
+    viewer = new BpmnJS({container: canvasEl});
+    viewer.get('eventBus').on('element.click', e => showStep(e.element.id));
+  }
+  picked = null;
+  await viewer.importXML(proc.xml);
+  const cv = viewer.get('canvas');
+  cv.zoom(1);
+  inner = cv.viewbox().inner;
+  const overlays = viewer.get('overlays'), registry = viewer.get('elementRegistry');
+  Object.entries(proc.steps).forEach(([nid, s]) => {
+    const el = registry.get(nid);
+    if (!s.kpi || !el) return;
+    const html = `<div class="bpmn-kpi ${s.kpi.tone || ''}" title="${esc(s.kpi.note)}">${esc(s.kpi.value)}</div>`;
+    const pos = el.width >= 100 ? {top: -11, right: 4} : s.label === 'right' ? {top: -14, right: el.width - 8}
+      : s.label === 'above' ? {top: el.height - 6, left: el.width - 6} : {top: -14, left: el.width - 8};
+    overlays.add(nid, 'kpi', {position: pos, html, scale: {min: 0.85, max: 1.3}});
+  });
+  applyZoom(Math.max(fitZoom(), window.innerWidth < 700 ? 0.55 : 0.7));
+  wrap.scrollLeft = 0; wrap.scrollTop = 0;
+  document.getElementById('stepInfo').innerHTML = infoDefault;
+}
+tabs.addEventListener('click', e => {
+  const b = e.target.closest('button[data-proc]');
+  if (!b) return;
+  tabs.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+  showProcess(b.dataset.proc);
+});
+document.querySelectorAll('.proc-tools button').forEach(b => b.addEventListener('click', () => {
+  if (!inner) return;
+  applyZoom(b.dataset.zoom === 'fit' ? fitZoom() : zoom * (b.dataset.zoom === 'in' ? 1.2 : 1 / 1.2));
+}));
+showProcess(D.processes[0].id);
 
 if (typeof Chart !== 'undefined') renderCharts();
 else document.querySelectorAll('.chart-box').forEach(b => b.outerHTML = '<p class="take">Charts could not load (chart.umd.min.js is missing or blocked). The numbers and tables are unaffected.</p>');

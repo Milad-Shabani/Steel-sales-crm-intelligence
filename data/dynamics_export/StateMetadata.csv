@@ -31,3 +31,11 @@ activitypointer,2,False,1033,Canceled
 activitypointer,3,False,1033,Scheduled
 product,0,False,1033,Active
 product,1,False,1033,Retired
+ahn_shipment,0,False,1033,Active
+ahn_shipment,1,False,1033,Inactive
+incident,0,False,1033,Active
+incident,1,False,1033,Resolved
+incident,2,False,1033,Canceled
+incidentresolution,0,False,1033,Open
+incidentresolution,1,False,1033,Completed
+incidentresolution,2,False,1033,Canceled

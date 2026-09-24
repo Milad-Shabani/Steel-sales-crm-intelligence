@@ -19,6 +19,17 @@ and customers come back for repeat business until they churn. Win chances
 depend on things a real trader would recognise: how fast the quote went
 out, the discount, the competitor, deal size, the rep, the channel, and
 whether prices are about to rise.
+
+Operations sit on top of the sales cycle. Every order gets a shipment in
+the custom table `ahn_shipment` (fed from the warehouse and weighbridge by
+a flow): the warehouse that serves the customer's province, stock or a
+mill-direct purchase on the Iran Mercantile Exchange, the carrier, the
+weighbridge weight and the stock-ready, loaded, dispatched and delivered
+times. Claims and requests after delivery are Dynamics 365 Customer Service
+cases (`incident`, `incidentresolution`) with SLA due dates, escalation,
+compensation and a satisfaction score. The operational tables draw from
+their own random stream and their own ID sequence, so adding them leaves
+every sales table exactly as it was.
 """
 
 from __future__ import annotations
@@ -97,6 +108,10 @@ class DataverseExportGenerator:
     def __init__(self, seed: int = 42, start: str = "2024-07-01", end: str = "2026-06-30"):
         self.rng = np.random.default_rng(seed)
         self._ids = random.Random(seed)
+        # operations (shipments, cases) use their own streams: the sales tables don't change
+        self.ops = np.random.default_rng(seed + 1000)
+        self._ops_ids = random.Random(seed + 1000)
+        self.shipments: list[dict] = []
         self.start = pd.Timestamp(start)
         self.end = pd.Timestamp(end) + pd.Timedelta(hours=23, minutes=59)
         self.months = pd.period_range(self.start, self.end, freq="M")
@@ -108,6 +123,9 @@ class DataverseExportGenerator:
     # ------------------------------------------------------------------ helpers
     def uid(self) -> str:
         return str(uuid.UUID(int=self._ids.getrandbits(128), version=4))
+
+    def ops_uid(self) -> str:
+        return str(uuid.UUID(int=self._ops_ids.getrandbits(128), version=4))
 
     def _number(self, prefix: str) -> str:
         self._counters[prefix] += 1
@@ -194,6 +212,15 @@ class DataverseExportGenerator:
                 systemuserid=rid, fullname=rep.name, firstname=first, lastname=last, title=rep.title,
                 territoryid=self.territory_ids[rep.territory], isdisabled=False,
                 createdon=created + pd.Timedelta(days=int(self.rng.integers(0, 900)))))
+        self.agent_ids = []
+        for name, title, _ in C.SERVICE_AGENTS:
+            aid = self.ops_uid()
+            self.agent_ids.append(aid)
+            first, last = name.split(" ", 1)
+            self.rows["systemuser"].append(dict(
+                systemuserid=aid, fullname=name, firstname=first, lastname=last, title=title,
+                territoryid=None, isdisabled=False,
+                createdon=created + pd.Timedelta(days=int(self.ops.integers(300, 1500)))))
         self.rows["transactioncurrency"].append(dict(
             transactioncurrencyid=IRR_CURRENCY_ID, isocurrencycode="IRR", currencyname="Iranian Rial",
             currencysymbol="﷼", exchangerate=1.0))
@@ -588,11 +615,13 @@ class DataverseExportGenerator:
                 extendedamount=base - discount, ahn_costperton=round(self.cost(prod, close), -3),
                 sequencenumber=seq, transactioncurrencyid=IRR_CURRENCY_ID))
         invoiced = fulfilled <= self.end
+        number = self._number("ORD")
+        promised = self._shipment(so_id, number, account, close, fulfilled, lines, s.group, total)
         self.rows["salesorder"].append(dict(
-            salesorderid=so_id, ordernumber=self._number("ORD"), opportunityid=opp_id, quoteid=quote_id,
+            salesorderid=so_id, ordernumber=number, opportunityid=opp_id, quoteid=quote_id,
             customerid=account.id, customeridtype="account", ownerid=self.rep_ids[s.rep],
-            submitdate=close, datefulfilled=fulfilled if invoiced else None, totalamount=round(total),
-            paymenttermscode=account.terms, statecode=4 if invoiced else 1,
+            submitdate=close, requestdeliveryby=promised.date(), datefulfilled=fulfilled if invoiced else None,
+            totalamount=round(total), paymenttermscode=account.terms, statecode=4 if invoiced else 1,
             statuscode=100003 if invoiced else 3, createdon=close, transactioncurrencyid=IRR_CURRENCY_ID))
         if invoiced:
             days = C.PAYMENT_TERMS[account.terms][1]
@@ -613,6 +642,201 @@ class DataverseExportGenerator:
                 ahn_paidon=paid if is_paid else None, statecode=2 if is_paid else 0,
                 statuscode=100001 if is_paid else 4, transactioncurrencyid=IRR_CURRENCY_ID))
         return round(total)
+
+    # ------------------------------------------------------------------ warehouse and delivery
+    def _shipment(self, so_id, number, account, close, delivered, lines, group, total) -> pd.Timestamp:
+        """One ahn_shipment row per order; returns the promised delivery date.
+
+        The delivery time is fixed by the order (`datefulfilled`); the steps
+        before it are laid out backwards from it: road time from the serving
+        warehouse, weighbridge and waybill, and before that either a short
+        stock reservation (then the load waits in the yard for a truck) or a
+        mill-direct purchase on the Iran Mercantile Exchange, which needs
+        days and is only chosen when there are days to spare.
+        """
+        rng = self.ops
+        tons = sum(q for _, q in lines)
+        wh_label, road_h = C.DELIVERY_ROUTES[account.province]
+        wh = C.WAREHOUSE_BY_LABEL[wh_label]
+        window = (delivered - close).total_seconds() / 3600
+        sheet = group in ("Cold-Rolled Sheet", "Galvanized Sheet")
+        p_mill = 0.0 if window < 72 else min(0.85, 0.2 + 0.35 * (tons >= 150) + 0.25 * sheet)
+        sourcing = 100000001 if rng.random() < p_mill else 100000000
+        mill = sourcing == 100000001
+
+        transit = min(road_h * float(rng.lognormal(0, 0.25)), 0.45 * window)
+        dispatched = delivered - pd.Timedelta(hours=transit)
+        loaded = dispatched - pd.Timedelta(hours=float(rng.uniform(0.4, 2.0)))
+        if mill:
+            ready = close + (loaded - close) * float(rng.uniform(0.6, 0.9))
+        else:
+            ready = close + min(pd.Timedelta(hours=float(rng.uniform(0.3, 4.0))), (loaded - close) * 0.5)
+        yard_h = (loaded - ready).total_seconds() / 3600
+        # a load that waits days in the yard is usually waiting for the own fleet
+        if not mill and road_h <= 6 and yard_h < 24 and rng.random() < 0.25:
+            carrier = 100000003
+        else:
+            p_own = 0.8 if yard_h > 60 else 0.5 if yard_h > 24 else 0.2
+            carrier = 100000000 if rng.random() < p_own else int(rng.choice([100000001, 100000002]))
+        promise_days = C.PROMISE_DAYS[sourcing] + (1 if road_h >= 10 else 0)
+        promised = self._workday(close.normalize() + pd.Timedelta(days=promise_days))
+
+        sd = 0.003 if mill else wh.weighbridge_sd
+        variance = float(rng.normal(0, sd))
+        loaded_tons = round(tons * (1 + variance), 2)
+        pod = carrier == 100000003 or rng.random() < 0.96
+        seen = lambda ts: ts if ts <= self.end else None  # noqa: E731
+        status = ((1, 2) if delivered <= self.end else (0, 100000001) if dispatched <= self.end
+                  else (0, 100000000) if ready <= self.end else (0, 1))
+        shipment_id = self.ops_uid()
+        self.rows["ahn_shipment"].append(dict(
+            ahn_shipmentid=shipment_id, ahn_name=self._number("SHP"), ahn_salesorderid=so_id,
+            ahn_customerid=account.id, ahn_warehouse=wh.code, ahn_sourcing=sourcing, ahn_carrier=carrier,
+            ahn_orderedtons=tons, ahn_loadedtons=loaded_tons if loaded <= self.end else None,
+            ahn_truckloads=math.ceil(tons / C.TRUCK_TONS), ahn_stockreadyon=seen(ready), ahn_loadedon=seen(loaded),
+            ahn_dispatchedon=seen(dispatched), ahn_deliveredon=seen(delivered),
+            ahn_waybillnumber=f"WB-{number[4:]}" if dispatched <= self.end else None,
+            ahn_podreceived=bool(pod) if delivered <= self.end else None,
+            createdon=close + pd.Timedelta(minutes=int(rng.integers(5, 60))),
+            statecode=status[0], statuscode=status[1]))
+        self.shipments.append(dict(
+            id=shipment_id, so_id=so_id, number=number, account=account, close=close, delivered=delivered,
+            promised=promised, tons=tons, value=total, group=group, variance=variance, pod=pod,
+            warehouse=wh, mill=mill))
+        return promised
+
+    # ------------------------------------------------------------------ customer service
+    def _quiet_customers(self) -> dict[str, pd.Timestamp]:
+        """Regular customers that stopped ordering (the rule the analysis uses), with their last order."""
+        dates = defaultdict(list)
+        for so in self.rows["salesorder"]:
+            dates[so["customerid"]].append(so["submitdate"])
+        quiet = {}
+        for acc, ds in dates.items():
+            if len(ds) < 3:
+                continue
+            ds.sort()
+            gap = float(np.median(np.diff([d.value for d in ds]))) / 86_400e9
+            if (self.end - ds[-1]).days > max(90.0, 2.5 * gap):
+                quiet[acc] = ds[-1]
+        return quiet
+
+    def _service_cases(self) -> None:
+        """Customer Service cases raised on deliveries: claims, and requests for papers or changes.
+
+        What triggers a case follows the delivery: a load outside the
+        weighbridge tolerance, a truck that arrives after the promised date,
+        sheet grades and the automotive trade for quality claims, the humid
+        coastal yard for rust, a missing proof of delivery for invoice
+        disputes. Resolution times follow the category and the agent. Claims
+        of customers who later stopped ordering are made to drag on: the link
+        between service and churn is built into this synthetic data.
+        """
+        rng = self.ops
+        quiet = self._quiet_customers()
+        for sh in self.shipments:
+            if sh["delivered"] > self.end:
+                continue
+            ind = sh["account"].industry.label
+            var, cats = sh["variance"], []
+            if abs(var) > C.WEIGHT_TOLERANCE and rng.random() < (0.75 if var < 0 else 0.35):
+                cats.append("Weight discrepancy")
+            days_late = (sh["delivered"].normalize() - sh["promised"]).days
+            if days_late > 0 and rng.random() < min(0.45, 0.08 + 0.07 * days_late):
+                cats.append("Late delivery")
+            sheet = sh["group"] in ("Cold-Rolled Sheet", "Galvanized Sheet", "Hot-Rolled Sheet")
+            if rng.random() < 0.008 + 0.04 * (ind == "Automotive & Appliance Parts") + 0.015 * sheet:
+                cats.append("Quality / spec claim")
+            if rng.random() < 0.01 + 0.06 * (sh["warehouse"].humid and sheet):
+                cats.append("Damaged or rusted material")
+            if rng.random() < 0.01 + 0.35 * (not sh["pod"]) + 0.03 * ("Government" in ind):
+                cats.append("Invoice dispute")
+            paperwork = ind in ("Government & Infrastructure Project", "Automotive & Appliance Parts")
+            if rng.random() < 0.01 + 0.06 * paperwork:
+                cats.append("Mill certificate request")
+            if rng.random() < 0.015:
+                cats.append("Delivery change request")
+            for label in cats:
+                self._case(sh, C.CASE_BY_LABEL[label], days_late, quiet.get(sh["account"].id))
+
+    def _case(self, sh, cat, days_late, quiet_since) -> None:
+        rng = self.ops
+        delivered = sh["delivered"]
+        hours = lambda h: pd.Timedelta(hours=float(h))  # noqa: E731
+        if cat.label == "Late delivery":
+            created = sh["promised"] + hours(10 + rng.uniform(0, 24 * max(days_late - 0.5, 0.2)))
+        elif cat.label == "Delivery change request":
+            created = sh["close"] + (delivered - sh["close"]) * float(rng.uniform(0.1, 0.6))
+        elif cat.label == "Invoice dispute":
+            created = delivered + hours(24 * rng.lognormal(math.log(10), 0.5))
+        elif cat.casetype == 2 and cat.label != "Weight discrepancy":
+            created = delivered + hours(24 * rng.lognormal(math.log(3), 0.6))
+        else:
+            created = delivered + hours(rng.lognormal(math.log(10), 0.6))
+        created = self._workday(created)
+        if created > self.end:
+            return
+        priority = cat.priority
+        if cat.label == "Weight discrepancy" and abs(sh["variance"]) < 0.01:
+            priority = 2
+        if cat.label == "Late delivery" and days_late >= 3:
+            priority = 1
+        _, respond_h, resolve_h = C.PRIORITY_SLA[priority]
+        agent = int(rng.choice(len(C.SERVICE_AGENTS), p=[0.3, 0.25, 0.3, 0.15]))
+        speed = C.SERVICE_AGENTS[agent][2]
+        origin = int(rng.choice(list(C.CASE_ORIGINS), p=[v[1] for v in C.CASE_ORIGINS.values()]))
+        first_h = rng.lognormal(math.log(1.1 * speed), 0.7) + (1.0 if origin != 1 else 0.0)
+        res_h = rng.lognormal(math.log(cat.resolve_hours * speed), 0.6)
+        if quiet_since is not None and created >= quiet_since - pd.Timedelta(days=150):
+            res_h *= rng.uniform(1.8, 3.0)  # the claim dragged on, and the customer went elsewhere
+        res_h = max(res_h, first_h + 0.5)
+        problem = cat.casetype == 2
+        upheld = None
+        if problem:
+            p = cat.upheld
+            if cat.label == "Weight discrepancy":
+                p = 0.85 if sh["variance"] < 0 else 0.4
+            upheld = bool(rng.random() < p)
+        compensation = 0.0
+        if upheld:
+            price = sh["value"] / sh["tons"]
+            share = {"Weight discrepancy": abs(sh["variance"]), "Quality / spec claim": rng.uniform(0.02, 0.08),
+                     "Damaged or rusted material": rng.uniform(0.01, 0.04),
+                     "Invoice dispute": rng.uniform(0.005, 0.02)}.get(cat.label, 0.0)
+            compensation = round(share * sh["tons"] * price, -5)
+        resolved = created + hours(res_h)
+        first = created + hours(first_h)
+        escalate_at = created + hours(0.75 * resolve_h)
+        escalated = resolved > escalate_at
+        done = resolved <= self.end
+        breach = res_h > resolve_h
+        csat = None
+        if done and rng.random() < 0.45:
+            score = 4.4 - 1.5 * breach - 0.8 * (problem and not upheld) - 0.3 * (res_h > 72) + rng.normal(0, 0.7)
+            csat = int(np.clip(round(score), 1, 5))
+        incident_id = self.ops_uid()
+        self._counters["CAS"] += 1
+        suffix = "".join(rng.choice(list("ABCDEFGHJKLMNPQRSTUVWXYZ0123456789"), size=6))
+        self.rows["incident"].append(dict(
+            incidentid=incident_id, ticketnumber=f"CAS-{self._counters['CAS']:05d}-{suffix}",
+            title=f"{cat.label}: {sh['number']}", customerid=sh["account"].id, customeridtype="account",
+            ahn_salesorderid=sh["so_id"], ahn_shipmentid=sh["id"], casetypecode=cat.casetype,
+            ahn_casecategory=cat.code, ahn_investigatingteam=C.TEAMS[cat.queue], prioritycode=priority,
+            caseorigincode=origin, ownerid=self.agent_ids[agent], createdon=created,
+            responseby=created + hours(respond_h), resolveby=created + hours(resolve_h),
+            firstresponsesent=first <= self.end, ahn_firstresponseon=first if first <= self.end else None,
+            isescalated=escalated and escalate_at <= self.end,
+            escalatedon=escalate_at if escalated and escalate_at <= self.end else None,
+            ahn_claimupheld=upheld if done else None, ahn_compensationamount=compensation if done else None,
+            customersatisfactioncode=csat,
+            statecode=1 if done else 0,
+            statuscode=(5 if problem else 1000) if done else int(rng.choice([1, 3, 4])),
+            modifiedon=resolved if done else min(self.end, first)))
+        if done:
+            self.rows["incidentresolution"].append(dict(
+                activityid=self.ops_uid(), incidentid=incident_id, subject=f"Resolved: {cat.label}",
+                timespent=int(rng.lognormal(math.log(45 if problem else 15), 0.6)), actualend=resolved,
+                createdon=resolved, ownerid=self.agent_ids[agent], statecode=1, statuscode=2))
 
     # ------------------------------------------------------------------ repeat business
     def _repeat_business(self) -> None:
@@ -674,6 +898,16 @@ class DataverseExportGenerator:
                                                     5: "SMS reply", 6: "Social media"})
         add("salesorder", "paymenttermscode", terms)
         add("invoice", "paymenttermscode", terms)
+        add("ahn_shipment", "ahn_warehouse", {w.code: w.label for w in C.WAREHOUSES})
+        add("ahn_shipment", "ahn_sourcing", C.SOURCING)
+        add("ahn_shipment", "ahn_carrier", C.CARRIERS)
+        add("incident", "casetypecode", {1: "Question", 2: "Problem", 3: "Request"})
+        add("incident", "prioritycode", {k: v[0] for k, v in C.PRIORITY_SLA.items()})
+        add("incident", "caseorigincode", {k: v[0] for k, v in C.CASE_ORIGINS.items()})
+        add("incident", "ahn_casecategory", {c.code: c.label for c in C.CASE_CATEGORIES})
+        add("incident", "ahn_investigatingteam", {v: k for k, v in C.TEAMS.items()})
+        add("incident", "customersatisfactioncode", {1: "Very Dissatisfied", 2: "Dissatisfied", 3: "Neutral",
+                                                     4: "Satisfied", 5: "Very Satisfied"})
 
         glob = []
         for entity in ("product", "lead", "opportunity"):
@@ -693,6 +927,9 @@ class DataverseExportGenerator:
             "campaignresponse": {0: "Open", 1: "Closed", 2: "Canceled"},
             "activitypointer": {0: "Open", 1: "Completed", 2: "Canceled", 3: "Scheduled"},
             "product": {0: "Active", 1: "Retired"},
+            "ahn_shipment": {0: "Active", 1: "Inactive"},
+            "incident": {0: "Active", 1: "Resolved", 2: "Canceled"},
+            "incidentresolution": {0: "Open", 1: "Completed", 2: "Canceled"},
         }
         statuses = {
             "account": [(0, 1, "Active"), (1, 2, "Inactive")],
@@ -711,6 +948,12 @@ class DataverseExportGenerator:
             "campaignresponse": [(0, 1, "Open"), (1, 2, "Closed"), (2, 3, "Canceled")],
             "activitypointer": [(0, 1, "Open"), (1, 2, "Completed"), (2, 3, "Canceled"), (3, 4, "Scheduled")],
             "product": [(0, 1, "Active"), (1, 2, "Retired")],
+            "ahn_shipment": [(0, 1, "Planned"), (0, 100000000, "Loading"), (0, 100000001, "In Transit"),
+                             (1, 2, "Delivered")],
+            "incident": [(0, 1, "In Progress"), (0, 2, "On Hold"), (0, 3, "Waiting for Details"),
+                         (0, 4, "Researching"), (1, 5, "Problem Solved"), (1, 1000, "Information Provided"),
+                         (2, 6, "Canceled"), (2, 2000, "Merged")],
+            "incidentresolution": [(0, 1, "Open"), (1, 2, "Completed"), (2, 3, "Canceled")],
         }
         state_rows = [dict(EntityName=e, State=s, IsUserLocalizedLabel=False, LocalizedLabelLanguageCode=1033,
                            LocalizedLabel=label) for e, m in states.items() for s, label in m.items()]
@@ -736,6 +979,7 @@ class DataverseExportGenerator:
             opp = self._simulate(spec)
             spec.lead_row["qualifyingopportunityid"] = opp["opportunityid"]
         self._repeat_business()
+        self._service_cases()
         customers = {a.id for a in self.accounts if a.customer_since is not None}
         for row in self.rows["account"]:
             if row["accountid"] in customers:

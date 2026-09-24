@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" id="Definitions_lead_to_order" targetNamespace="https://github.com/Milad-Shabani/Steel-sales-crm-intelligence" exporter="steel_crm.processes" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_lead_to_order">
+    <bpmn:documentation>Dynamics 365 Sales: from an enquiry to a booked sales order at Ahanyar Steel.</bpmn:documentation>
+    <bpmn:participant id="Pool_l2o_customer" name="Customer" />
+    <bpmn:participant id="Pool_l2o_ahanyar" name="Ahanyar Steel Trading Co." processRef="Process_lead_to_order" />
+    <bpmn:messageFlow id="Message_Pool_l2o_customer_l2o_start" name="Enquiry" sourceRef="Pool_l2o_customer" targetRef="l2o_start" />
+    <bpmn:messageFlow id="Message_l2o_send_Pool_l2o_customer" name="Quote" sourceRef="l2o_send" targetRef="Pool_l2o_customer" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_lead_to_order" name="Lead to order" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_lead_to_order">
+      <bpmn:lane id="Lane_l2o_marketing" name="Marketing">
+        <bpmn:flowNodeRef>l2o_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_capture</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_nurture</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_l2o_rep" name="Sales rep">
+        <bpmn:flowNodeRef>l2o_qualify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_gw_qualified</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_open</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_merge_price</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_price</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_gw_discount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_merge_discount</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_expired</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_accepts</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_declines</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_booked</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_loss</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>l2o_lost</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_l2o_manager" name="Head of Sales">
+        <bpmn:flowNodeRef>l2o_approve</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="l2o_start" name="Enquiry or campaign response">
+      <bpmn:documentation>campaignresponse (responsecode Interested) or a web form, a call or a referral</bpmn:documentation>
+      <bpmn:outgoing>Flow_l2o_start_l2o_capture</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_l2o_start" />
+    </bpmn:startEvent>
+    <bpmn:userTask id="l2o_capture" name="Capture the lead">
+      <bpmn:documentation>lead: leadsourcecode, campaignid, ahn_productgroup, ahn_estimatedtonnage</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_start_l2o_capture</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_capture_l2o_qualify</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="l2o_qualify" name="Qualify the lead">
+      <bpmn:documentation>lead.statecode Qualified or Disqualified, with the status reason</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_capture_l2o_qualify</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_qualify_l2o_gw_qualified</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="l2o_gw_qualified" name="Qualified?">
+      <bpmn:incoming>Flow_l2o_qualify_l2o_gw_qualified</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_gw_qualified_l2o_nurture</bpmn:outgoing>
+      <bpmn:outgoing>Flow_l2o_gw_qualified_l2o_open</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="l2o_nurture" name="Disqualified, back to nurture">
+      <bpmn:documentation>lead.statuscode: Lost, Cannot Contact, No Longer Interested, Canceled</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_gw_qualified_l2o_nurture</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="l2o_open" name="Open the opportunity and account">
+      <bpmn:documentation>opportunity, account (originatingleadid); business process flow stage Qualify -&gt; Develop</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_gw_qualified_l2o_open</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_open_l2o_merge_price</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="l2o_merge_price" name="">
+      <bpmn:incoming>Flow_l2o_open_l2o_merge_price</bpmn:incoming>
+      <bpmn:incoming>Flow_l2o_expired_l2o_merge_price</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_merge_price_l2o_price</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="l2o_price" name="Price the quote from this month's list">
+      <bpmn:documentation>quote with a revisionnumber per re-price; pricelevel of the month; productpricelevel.amount</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_merge_price_l2o_price</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_price_l2o_gw_discount</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="l2o_gw_discount" name="Discount over 3%?">
+      <bpmn:incoming>Flow_l2o_price_l2o_gw_discount</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_gw_discount_l2o_approve</bpmn:outgoing>
+      <bpmn:outgoing>Flow_l2o_gw_discount_l2o_merge_discount</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="l2o_approve" name="Approve the discount">
+      <bpmn:documentation>quote.discountpercentage above 3% needs the Head of Sales</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_gw_discount_l2o_approve</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_approve_l2o_merge_discount</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="l2o_merge_discount" name="">
+      <bpmn:incoming>Flow_l2o_gw_discount_l2o_merge_discount</bpmn:incoming>
+      <bpmn:incoming>Flow_l2o_approve_l2o_merge_discount</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_merge_discount_l2o_send</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="l2o_send" name="Send the quote, valid for 3 days">
+      <bpmn:documentation>quote.effectivefrom / effectiveto (3 days); opportunity stage Propose</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_merge_discount_l2o_send</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_send_l2o_wait</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:eventBasedGateway id="l2o_wait" name="">
+      <bpmn:incoming>Flow_l2o_send_l2o_wait</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_wait_l2o_expired</bpmn:outgoing>
+      <bpmn:outgoing>Flow_l2o_wait_l2o_accepts</bpmn:outgoing>
+      <bpmn:outgoing>Flow_l2o_wait_l2o_declines</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="l2o_expired" name="No answer in 3 days: re-price">
+      <bpmn:documentation>the quote expires; a new revision is priced from the current list</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_wait_l2o_expired</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_expired_l2o_merge_price</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerDef_l2o_expired">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P3D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="l2o_accepts" name="Customer accepts">
+      <bpmn:documentation>opportunity closed as Won; quote Won</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_wait_l2o_accepts</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_accepts_l2o_order</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_l2o_accepts" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="l2o_declines" name="Customer declines">
+      <bpmn:documentation>opportunity closed as Lost</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_wait_l2o_declines</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_declines_l2o_loss</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_l2o_declines" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="l2o_order" name="Create the sales order">
+      <bpmn:documentation>salesorder and salesorderdetail from the won quote; stage Close</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_accepts_l2o_order</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_order_l2o_booked</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="l2o_booked" name="Order booked">
+      <bpmn:documentation>continues in Order to delivery</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_order_l2o_booked</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="l2o_loss" name="Record the loss reason">
+      <bpmn:documentation>opportunity.ahn_lossreason and the competitor (opportunitycompetitors)</bpmn:documentation>
+      <bpmn:incoming>Flow_l2o_declines_l2o_loss</bpmn:incoming>
+      <bpmn:outgoing>Flow_l2o_loss_l2o_lost</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="l2o_lost" name="Opportunity lost">
+      <bpmn:incoming>Flow_l2o_loss_l2o_lost</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_l2o_start_l2o_capture" sourceRef="l2o_start" targetRef="l2o_capture" />
+    <bpmn:sequenceFlow id="Flow_l2o_capture_l2o_qualify" sourceRef="l2o_capture" targetRef="l2o_qualify" />
+    <bpmn:sequenceFlow id="Flow_l2o_qualify_l2o_gw_qualified" sourceRef="l2o_qualify" targetRef="l2o_gw_qualified" />
+    <bpmn:sequenceFlow id="Flow_l2o_gw_qualified_l2o_nurture" name="No" sourceRef="l2o_gw_qualified" targetRef="l2o_nurture" />
+    <bpmn:sequenceFlow id="Flow_l2o_gw_qualified_l2o_open" name="Yes" sourceRef="l2o_gw_qualified" targetRef="l2o_open" />
+    <bpmn:sequenceFlow id="Flow_l2o_open_l2o_merge_price" sourceRef="l2o_open" targetRef="l2o_merge_price" />
+    <bpmn:sequenceFlow id="Flow_l2o_merge_price_l2o_price" sourceRef="l2o_merge_price" targetRef="l2o_price" />
+    <bpmn:sequenceFlow id="Flow_l2o_price_l2o_gw_discount" sourceRef="l2o_price" targetRef="l2o_gw_discount" />
+    <bpmn:sequenceFlow id="Flow_l2o_gw_discount_l2o_approve" name="Yes" sourceRef="l2o_gw_discount" targetRef="l2o_approve" />
+    <bpmn:sequenceFlow id="Flow_l2o_gw_discount_l2o_merge_discount" name="No" sourceRef="l2o_gw_discount" targetRef="l2o_merge_discount" />
+    <bpmn:sequenceFlow id="Flow_l2o_approve_l2o_merge_discount" sourceRef="l2o_approve" targetRef="l2o_merge_discount" />
+    <bpmn:sequenceFlow id="Flow_l2o_merge_discount_l2o_send" sourceRef="l2o_merge_discount" targetRef="l2o_send" />
+    <bpmn:sequenceFlow id="Flow_l2o_send_l2o_wait" sourceRef="l2o_send" targetRef="l2o_wait" />
+    <bpmn:sequenceFlow id="Flow_l2o_wait_l2o_expired" sourceRef="l2o_wait" targetRef="l2o_expired" />
+    <bpmn:sequenceFlow id="Flow_l2o_wait_l2o_accepts" sourceRef="l2o_wait" targetRef="l2o_accepts" />
+    <bpmn:sequenceFlow id="Flow_l2o_wait_l2o_declines" sourceRef="l2o_wait" targetRef="l2o_declines" />
+    <bpmn:sequenceFlow id="Flow_l2o_expired_l2o_merge_price" sourceRef="l2o_expired" targetRef="l2o_merge_price" />
+    <bpmn:sequenceFlow id="Flow_l2o_accepts_l2o_order" sourceRef="l2o_accepts" targetRef="l2o_order" />
+    <bpmn:sequenceFlow id="Flow_l2o_order_l2o_booked" sourceRef="l2o_order" targetRef="l2o_booked" />
+    <bpmn:sequenceFlow id="Flow_l2o_declines_l2o_loss" sourceRef="l2o_declines" targetRef="l2o_loss" />
+    <bpmn:sequenceFlow id="Flow_l2o_loss_l2o_lost" sourceRef="l2o_loss" targetRef="l2o_lost" />
+    <bpmn:textAnnotation id="l2o_note_bpf"><bpmn:text>Business process flow on the opportunity: Qualify, Develop, Propose, Close (opportunity.stepname)</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_l2o_note_bpf" associationDirection="None" sourceRef="l2o_note_bpf" targetRef="l2o_open" />
+    <bpmn:textAnnotation id="l2o_note_price"><bpmn:text>Steel prices move weekly: the list changes every month and a quote holds for three days</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_l2o_note_price" associationDirection="None" sourceRef="l2o_note_price" targetRef="l2o_price" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_lead_to_order">
+    <bpmndi:BPMNPlane id="Plane_lead_to_order" bpmnElement="Collaboration_lead_to_order">
+      <bpmndi:BPMNShape id="Pool_l2o_customer_di" bpmnElement="Pool_l2o_customer" isHorizontal="true"><dc:Bounds x="120" y="60" width="2088" height="64" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Pool_l2o_ahanyar_di" bpmnElement="Pool_l2o_ahanyar" isHorizontal="true"><dc:Bounds x="120" y="160" width="2088" height="570" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_l2o_marketing_di" bpmnElement="Lane_l2o_marketing" isHorizontal="true"><dc:Bounds x="150" y="160" width="2058" height="140" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_l2o_rep_di" bpmnElement="Lane_l2o_rep" isHorizontal="true"><dc:Bounds x="150" y="300" width="2058" height="280" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_l2o_manager_di" bpmnElement="Lane_l2o_manager" isHorizontal="true"><dc:Bounds x="150" y="580" width="2058" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_start_di" bpmnElement="l2o_start" bioc:stroke="#0E7C69" bioc:fill="#E3F4EF" color:background-color="#E3F4EF" color:border-color="#0E7C69"><dc:Bounds x="232" y="212" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="195" y="252" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_capture_di" bpmnElement="l2o_capture" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="332" y="190" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_qualify_di" bpmnElement="l2o_qualify" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="464" y="400" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_gw_qualified_di" bpmnElement="l2o_gw_qualified" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="621" y="415" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="591" y="469" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_nurture_di" bpmnElement="l2o_nurture" bioc:stroke="#B33131" bioc:fill="#FBE9E9" color:background-color="#FBE9E9" color:border-color="#B33131"><dc:Bounds x="628" y="212" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="670" y="216" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_open_di" bpmnElement="l2o_open" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="728" y="400" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_merge_price_di" bpmnElement="l2o_merge_price" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="885" y="415" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_price_di" bpmnElement="l2o_price" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="992" y="400" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_gw_discount_di" bpmnElement="l2o_gw_discount" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1149" y="415" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="1119" y="383" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_approve_di" bpmnElement="l2o_approve" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1256" y="615" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_merge_discount_di" bpmnElement="l2o_merge_discount" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1413" y="415" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_send_di" bpmnElement="l2o_send" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1520" y="400" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_wait_di" bpmnElement="l2o_wait" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1677" y="415" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_expired_di" bpmnElement="l2o_expired" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="1816" y="342" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1858" y="346" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_accepts_di" bpmnElement="l2o_accepts" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="1816" y="422" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1779" y="462" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_declines_di" bpmnElement="l2o_declines" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="1816" y="517" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1779" y="485" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_order_di" bpmnElement="l2o_order" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1916" y="400" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_booked_di" bpmnElement="l2o_booked" bioc:stroke="#B33131" bioc:fill="#FBE9E9" color:background-color="#FBE9E9" color:border-color="#B33131"><dc:Bounds x="2080" y="422" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2043" y="462" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_loss_di" bpmnElement="l2o_loss" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1916" y="495" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_lost_di" bpmnElement="l2o_lost" bioc:stroke="#B33131" bioc:fill="#FBE9E9" color:background-color="#FBE9E9" color:border-color="#B33131"><dc:Bounds x="2080" y="517" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2043" y="557" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_note_bpf_di" bpmnElement="l2o_note_bpf" bioc:stroke="#8A96A8" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#8A96A8"><dc:Bounds x="678" y="621" width="200" height="68" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="l2o_note_price_di" bpmnElement="l2o_note_price" bioc:stroke="#8A96A8" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#8A96A8"><dc:Bounds x="947" y="621" width="190" height="68" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Message_Pool_l2o_customer_l2o_start_di" bpmnElement="Message_Pool_l2o_customer_l2o_start"><di:waypoint x="250" y="124" /><di:waypoint x="250" y="212" /><bpmndi:BPMNLabel><dc:Bounds x="255" y="161" width="46" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_start_l2o_capture_di" bpmnElement="Flow_l2o_start_l2o_capture"><di:waypoint x="268" y="230" /><di:waypoint x="332" y="230" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_capture_l2o_qualify_di" bpmnElement="Flow_l2o_capture_l2o_qualify"><di:waypoint x="432" y="230" /><di:waypoint x="448" y="230" /><di:waypoint x="448" y="440" /><di:waypoint x="464" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_qualify_l2o_gw_qualified_di" bpmnElement="Flow_l2o_qualify_l2o_gw_qualified"><di:waypoint x="564" y="440" /><di:waypoint x="621" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_gw_qualified_l2o_nurture_di" bpmnElement="Flow_l2o_gw_qualified_l2o_nurture"><di:waypoint x="646" y="415" /><di:waypoint x="646" y="248" /><bpmndi:BPMNLabel><dc:Bounds x="651" y="324" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_gw_qualified_l2o_open_di" bpmnElement="Flow_l2o_gw_qualified_l2o_open"><di:waypoint x="671" y="440" /><di:waypoint x="728" y="440" /><bpmndi:BPMNLabel><dc:Bounds x="677" y="423" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_open_l2o_merge_price_di" bpmnElement="Flow_l2o_open_l2o_merge_price"><di:waypoint x="828" y="440" /><di:waypoint x="885" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_merge_price_l2o_price_di" bpmnElement="Flow_l2o_merge_price_l2o_price"><di:waypoint x="935" y="440" /><di:waypoint x="992" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_price_l2o_gw_discount_di" bpmnElement="Flow_l2o_price_l2o_gw_discount"><di:waypoint x="1092" y="440" /><di:waypoint x="1149" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_gw_discount_l2o_approve_di" bpmnElement="Flow_l2o_gw_discount_l2o_approve"><di:waypoint x="1174" y="465" /><di:waypoint x="1174" y="655" /><di:waypoint x="1256" y="655" /><bpmndi:BPMNLabel><dc:Bounds x="1138" y="639" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_gw_discount_l2o_merge_discount_di" bpmnElement="Flow_l2o_gw_discount_l2o_merge_discount"><di:waypoint x="1199" y="440" /><di:waypoint x="1413" y="440" /><bpmndi:BPMNLabel><dc:Bounds x="1205" y="423" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_approve_l2o_merge_discount_di" bpmnElement="Flow_l2o_approve_l2o_merge_discount"><di:waypoint x="1356" y="655" /><di:waypoint x="1438" y="655" /><di:waypoint x="1438" y="465" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_merge_discount_l2o_send_di" bpmnElement="Flow_l2o_merge_discount_l2o_send"><di:waypoint x="1463" y="440" /><di:waypoint x="1520" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_l2o_send_Pool_l2o_customer_di" bpmnElement="Message_l2o_send_Pool_l2o_customer"><di:waypoint x="1570" y="400" /><di:waypoint x="1570" y="124" /><bpmndi:BPMNLabel><dc:Bounds x="1575" y="255" width="33" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_send_l2o_wait_di" bpmnElement="Flow_l2o_send_l2o_wait"><di:waypoint x="1620" y="440" /><di:waypoint x="1677" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_wait_l2o_expired_di" bpmnElement="Flow_l2o_wait_l2o_expired"><di:waypoint x="1702" y="415" /><di:waypoint x="1702" y="360" /><di:waypoint x="1816" y="360" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_wait_l2o_accepts_di" bpmnElement="Flow_l2o_wait_l2o_accepts"><di:waypoint x="1727" y="440" /><di:waypoint x="1816" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_wait_l2o_declines_di" bpmnElement="Flow_l2o_wait_l2o_declines"><di:waypoint x="1702" y="465" /><di:waypoint x="1702" y="535" /><di:waypoint x="1816" y="535" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_expired_l2o_merge_price_di" bpmnElement="Flow_l2o_expired_l2o_merge_price"><di:waypoint x="1834" y="342" /><di:waypoint x="1834" y="316" /><di:waypoint x="910" y="316" /><di:waypoint x="910" y="415" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_accepts_l2o_order_di" bpmnElement="Flow_l2o_accepts_l2o_order"><di:waypoint x="1852" y="440" /><di:waypoint x="1916" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_order_l2o_booked_di" bpmnElement="Flow_l2o_order_l2o_booked"><di:waypoint x="2016" y="440" /><di:waypoint x="2080" y="440" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_declines_l2o_loss_di" bpmnElement="Flow_l2o_declines_l2o_loss"><di:waypoint x="1852" y="535" /><di:waypoint x="1916" y="535" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_l2o_loss_l2o_lost_di" bpmnElement="Flow_l2o_loss_l2o_lost"><di:waypoint x="2016" y="535" /><di:waypoint x="2080" y="535" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_l2o_note_bpf_di" bpmnElement="Association_l2o_note_bpf"><di:waypoint x="778" y="621" /><di:waypoint x="778" y="480" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_l2o_note_price_di" bpmnElement="Association_l2o_note_price"><di:waypoint x="1042" y="621" /><di:waypoint x="1042" y="480" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

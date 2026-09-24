@@ -80,3 +80,8 @@ def test_pipeline_writes_dashboard_data(export_dir, tmp_path):
     assert (tmp_path / "processed" / "steel_crm.db").exists()
     assert (tmp_path / "processed" / "powerbi" / "fact_opportunity.csv").exists()
     assert summary["model"]["n_test"] > 0
+    ids = [p["id"] for p in payload["processes"]]
+    assert ids == ["lead_to_order", "order_to_delivery", "invoice_to_cash", "case_to_resolution"]
+    assert payload["processes"][0]["xml"].startswith("<?xml")
+    assert payload["operations"]["delivery"]["shipments"] > 0
+    assert (tmp_path / "processed" / "powerbi" / "fact_shipment.csv").exists()

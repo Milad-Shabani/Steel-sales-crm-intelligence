@@ -1,4 +1,4 @@
-"""Command line: `python -m steel_crm.cli generate-data` and `python -m steel_crm.cli run`."""
+"""Command line: `python -m steel_crm.cli generate-data`, `... run` and `... bpmn`."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ from pathlib import Path
 
 from .datagen.generator import generate_export
 from .pipeline import run
+from .processes.bpmn import write_bpmn
+from .processes.definitions import all_processes
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -22,6 +24,8 @@ def main(argv: list[str] | None = None) -> None:
     r.add_argument("--export", type=Path, default=Path("data/dynamics_export"))
     r.add_argument("--out", type=Path, default=Path("data/processed"))
     r.add_argument("--dashboard", type=Path, default=Path("dashboard/data.js"))
+    b = sub.add_parser("bpmn", help="write the BPMN 2.0 process diagrams (.bpmn)")
+    b.add_argument("--out", type=Path, default=Path("docs/bpmn"))
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
@@ -30,6 +34,9 @@ def main(argv: list[str] | None = None) -> None:
         tables = generate_export(args.out, args.seed, args.start, args.end)
         rows = sum(len(df) for df in tables.values())
         print(f"Wrote {len(tables)} tables ({rows:,} rows) to {args.out}")
+    elif args.command == "bpmn":
+        for path in write_bpmn(all_processes(), args.out):
+            print(f"Wrote {path}")
     else:
         summary = run(args.export, args.out, args.dashboard)
         k, m = summary["kpi"], summary["model"]

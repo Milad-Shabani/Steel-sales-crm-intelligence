@@ -85,3 +85,41 @@ invoice,paymenttermscode,100000000,False,1033,Cash in advance
 invoice,paymenttermscode,1,False,1033,Net 30
 invoice,paymenttermscode,4,False,1033,Net 60
 invoice,paymenttermscode,100000001,False,1033,Net 90
+ahn_shipment,ahn_warehouse,100000000,False,1033,Tehran - Shadabad
+ahn_shipment,ahn_warehouse,100000001,False,1033,Isfahan
+ahn_shipment,ahn_warehouse,100000002,False,1033,Ahvaz
+ahn_shipment,ahn_warehouse,100000003,False,1033,Mashhad
+ahn_shipment,ahn_warehouse,100000004,False,1033,Tabriz
+ahn_shipment,ahn_warehouse,100000005,False,1033,Bandar Abbas
+ahn_shipment,ahn_sourcing,100000000,False,1033,From stock
+ahn_shipment,ahn_sourcing,100000001,False,1033,Mill direct (IME purchase)
+ahn_shipment,ahn_carrier,100000000,False,1033,Own fleet
+ahn_shipment,ahn_carrier,100000001,False,1033,Barbari Sepehr
+ahn_shipment,ahn_carrier,100000002,False,1033,Tarabar Zagros
+ahn_shipment,ahn_carrier,100000003,False,1033,Customer pickup
+incident,casetypecode,1,False,1033,Question
+incident,casetypecode,2,False,1033,Problem
+incident,casetypecode,3,False,1033,Request
+incident,prioritycode,1,False,1033,High
+incident,prioritycode,2,False,1033,Normal
+incident,prioritycode,3,False,1033,Low
+incident,caseorigincode,1,False,1033,Phone
+incident,caseorigincode,2,False,1033,Email
+incident,caseorigincode,3,False,1033,Web
+incident,ahn_casecategory,100000000,False,1033,Weight discrepancy
+incident,ahn_casecategory,100000001,False,1033,Late delivery
+incident,ahn_casecategory,100000002,False,1033,Quality / spec claim
+incident,ahn_casecategory,100000003,False,1033,Damaged or rusted material
+incident,ahn_casecategory,100000004,False,1033,Invoice dispute
+incident,ahn_casecategory,100000005,False,1033,Mill certificate request
+incident,ahn_casecategory,100000006,False,1033,Delivery change request
+incident,ahn_investigatingteam,100000000,False,1033,Customer Service
+incident,ahn_investigatingteam,100000001,False,1033,Warehouse
+incident,ahn_investigatingteam,100000002,False,1033,Logistics
+incident,ahn_investigatingteam,100000003,False,1033,Quality
+incident,ahn_investigatingteam,100000004,False,1033,Finance
+incident,customersatisfactioncode,1,False,1033,Very Dissatisfied
+incident,customersatisfactioncode,2,False,1033,Dissatisfied
+incident,customersatisfactioncode,3,False,1033,Neutral
+incident,customersatisfactioncode,4,False,1033,Satisfied
+incident,customersatisfactioncode,5,False,1033,Very Satisfied

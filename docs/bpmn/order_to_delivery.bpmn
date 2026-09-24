@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" id="Definitions_order_to_delivery" targetNamespace="https://github.com/Milad-Shabani/Steel-sales-crm-intelligence" exporter="steel_crm.processes" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_order_to_delivery">
+    <bpmn:documentation>Warehouse and logistics: from a submitted sales order to a signed delivery and an invoice.</bpmn:documentation>
+    <bpmn:participant id="Pool_o2d_mill" name="Mill / Iran Mercantile Exchange" />
+    <bpmn:participant id="Pool_o2d_ahanyar" name="Ahanyar Steel Trading Co." processRef="Process_order_to_delivery" />
+    <bpmn:participant id="Pool_o2d_customer" name="Customer" />
+    <bpmn:messageFlow id="Message_o2d_buy_Pool_o2d_mill" name="Purchase" sourceRef="o2d_buy" targetRef="Pool_o2d_mill" />
+    <bpmn:messageFlow id="Message_Pool_o2d_mill_o2d_released" name="Loading slip" sourceRef="Pool_o2d_mill" targetRef="o2d_released" />
+    <bpmn:messageFlow id="Message_o2d_call_Pool_o2d_customer" name="New date" sourceRef="o2d_call" targetRef="Pool_o2d_customer" />
+    <bpmn:messageFlow id="Message_o2d_deliver_Pool_o2d_customer" name="Delivery" sourceRef="o2d_deliver" targetRef="Pool_o2d_customer" />
+    <bpmn:messageFlow id="Message_Pool_o2d_customer_o2d_deliver" name="Signed POD" sourceRef="Pool_o2d_customer" targetRef="o2d_deliver" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_order_to_delivery" name="Order to delivery" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_order_to_delivery">
+      <bpmn:lane id="Lane_o2d_desk" name="Order desk">
+        <bpmn:flowNodeRef>o2d_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_gw_stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_buy</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_released</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_adjust</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_o2d_warehouse" name="Warehouse and weighbridge">
+        <bpmn:flowNodeRef>o2d_reserve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_merge_source</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_load</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_gw_weight</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_merge_weight</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_o2d_logistics" name="Logistics">
+        <bpmn:flowNodeRef>o2d_truck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_at_risk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_call</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_informed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_dispatch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_deliver</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_o2d_finance" name="Finance">
+        <bpmn:flowNodeRef>o2d_invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>o2d_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="o2d_start" name="Sales order submitted">
+      <bpmn:documentation>salesorder.submitdate</bpmn:documentation>
+      <bpmn:outgoing>Flow_o2d_start_o2d_confirm</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:businessRuleTask id="o2d_confirm" name="Check credit, promise a delivery date">
+      <bpmn:documentation>account.creditlimit against open invoices; salesorder.requestdeliveryby</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_start_o2d_confirm</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_confirm_o2d_gw_stock</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="o2d_gw_stock" name="In stock at the serving warehouse?">
+      <bpmn:incoming>Flow_o2d_confirm_o2d_gw_stock</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_gw_stock_o2d_reserve</bpmn:outgoing>
+      <bpmn:outgoing>Flow_o2d_gw_stock_o2d_buy</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="o2d_reserve" name="Reserve the stock">
+      <bpmn:documentation>ahn_shipment.ahn_sourcing From stock; ahn_warehouse serves the customer's province; ahn_stockreadyon</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_gw_stock_o2d_reserve</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_reserve_o2d_merge_source</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="o2d_buy" name="Buy the load on the Mercantile Exchange">
+      <bpmn:documentation>ahn_shipment.ahn_sourcing Mill direct (IME purchase)</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_gw_stock_o2d_buy</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_buy_o2d_released</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:intermediateCatchEvent id="o2d_released" name="Mill releases the load">
+      <bpmn:documentation>ahn_shipment.ahn_stockreadyon: the load is ready at the mill</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_buy_o2d_released</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_released_o2d_merge_source</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_o2d_released" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="o2d_merge_source" name="">
+      <bpmn:incoming>Flow_o2d_reserve_o2d_merge_source</bpmn:incoming>
+      <bpmn:incoming>Flow_o2d_released_o2d_merge_source</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_merge_source_o2d_truck</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="o2d_truck" name="Book a truck: own fleet or carrier">
+      <bpmn:documentation>ahn_shipment.ahn_carrier; the load waits in the yard until the truck arrives</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_merge_source_o2d_truck</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_truck_o2d_load</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="o2d_at_risk" name="Promised date at risk" cancelActivity="false" attachedToRef="o2d_truck">
+      <bpmn:documentation>salesorder.requestdeliveryby is close and the load has not left</bpmn:documentation>
+      <bpmn:outgoing>Flow_o2d_at_risk_o2d_call</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerDef_o2d_at_risk">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P4D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sendTask id="o2d_call" name="Give the customer a new date">
+      <bpmn:documentation>phonecall activity on the account</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_at_risk_o2d_call</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_call_o2d_informed</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="o2d_informed" name="Customer informed">
+      <bpmn:incoming>Flow_o2d_call_o2d_informed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="o2d_load" name="Load and weigh on the weighbridge">
+      <bpmn:documentation>ahn_shipment.ahn_loadedon, ahn_loadedtons against ahn_orderedtons</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_truck_o2d_load</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_load_o2d_gw_weight</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="o2d_gw_weight" name="Within 0.5% of the ordered tons?">
+      <bpmn:incoming>Flow_o2d_load_o2d_gw_weight</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_gw_weight_o2d_adjust</bpmn:outgoing>
+      <bpmn:outgoing>Flow_o2d_gw_weight_o2d_merge_weight</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="o2d_adjust" name="Adjust the order to the weighed tons">
+      <bpmn:documentation>salesorderdetail.quantity follows the weighbridge ticket</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_gw_weight_o2d_adjust</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_adjust_o2d_merge_weight</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="o2d_merge_weight" name="">
+      <bpmn:incoming>Flow_o2d_gw_weight_o2d_merge_weight</bpmn:incoming>
+      <bpmn:incoming>Flow_o2d_adjust_o2d_merge_weight</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_merge_weight_o2d_dispatch</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="o2d_dispatch" name="Issue the waybill and dispatch">
+      <bpmn:documentation>ahn_shipment.ahn_waybillnumber, ahn_dispatchedon</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_merge_weight_o2d_dispatch</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_dispatch_o2d_deliver</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="o2d_deliver" name="Deliver and collect the signed POD">
+      <bpmn:documentation>ahn_shipment.ahn_deliveredon, ahn_podreceived; salesorder.datefulfilled</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_dispatch_o2d_deliver</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_deliver_o2d_invoice</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="o2d_invoice" name="Post the invoice">
+      <bpmn:documentation>invoice created on delivery with the account's payment terms</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_deliver_o2d_invoice</bpmn:incoming>
+      <bpmn:outgoing>Flow_o2d_invoice_o2d_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="o2d_end" name="Delivered and invoiced">
+      <bpmn:documentation>continues in Invoice to cash</bpmn:documentation>
+      <bpmn:incoming>Flow_o2d_invoice_o2d_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_o2d_start_o2d_confirm" sourceRef="o2d_start" targetRef="o2d_confirm" />
+    <bpmn:sequenceFlow id="Flow_o2d_confirm_o2d_gw_stock" sourceRef="o2d_confirm" targetRef="o2d_gw_stock" />
+    <bpmn:sequenceFlow id="Flow_o2d_gw_stock_o2d_reserve" name="Yes" sourceRef="o2d_gw_stock" targetRef="o2d_reserve" />
+    <bpmn:sequenceFlow id="Flow_o2d_gw_stock_o2d_buy" name="No" sourceRef="o2d_gw_stock" targetRef="o2d_buy" />
+    <bpmn:sequenceFlow id="Flow_o2d_buy_o2d_released" sourceRef="o2d_buy" targetRef="o2d_released" />
+    <bpmn:sequenceFlow id="Flow_o2d_reserve_o2d_merge_source" sourceRef="o2d_reserve" targetRef="o2d_merge_source" />
+    <bpmn:sequenceFlow id="Flow_o2d_released_o2d_merge_source" sourceRef="o2d_released" targetRef="o2d_merge_source" />
+    <bpmn:sequenceFlow id="Flow_o2d_merge_source_o2d_truck" sourceRef="o2d_merge_source" targetRef="o2d_truck" />
+    <bpmn:sequenceFlow id="Flow_o2d_truck_o2d_load" sourceRef="o2d_truck" targetRef="o2d_load" />
+    <bpmn:sequenceFlow id="Flow_o2d_at_risk_o2d_call" sourceRef="o2d_at_risk" targetRef="o2d_call" />
+    <bpmn:sequenceFlow id="Flow_o2d_call_o2d_informed" sourceRef="o2d_call" targetRef="o2d_informed" />
+    <bpmn:sequenceFlow id="Flow_o2d_load_o2d_gw_weight" sourceRef="o2d_load" targetRef="o2d_gw_weight" />
+    <bpmn:sequenceFlow id="Flow_o2d_gw_weight_o2d_adjust" name="No" sourceRef="o2d_gw_weight" targetRef="o2d_adjust" />
+    <bpmn:sequenceFlow id="Flow_o2d_gw_weight_o2d_merge_weight" name="Yes" sourceRef="o2d_gw_weight" targetRef="o2d_merge_weight" />
+    <bpmn:sequenceFlow id="Flow_o2d_adjust_o2d_merge_weight" sourceRef="o2d_adjust" targetRef="o2d_merge_weight" />
+    <bpmn:sequenceFlow id="Flow_o2d_merge_weight_o2d_dispatch" sourceRef="o2d_merge_weight" targetRef="o2d_dispatch" />
+    <bpmn:sequenceFlow id="Flow_o2d_dispatch_o2d_deliver" sourceRef="o2d_dispatch" targetRef="o2d_deliver" />
+    <bpmn:sequenceFlow id="Flow_o2d_deliver_o2d_invoice" sourceRef="o2d_deliver" targetRef="o2d_invoice" />
+    <bpmn:sequenceFlow id="Flow_o2d_invoice_o2d_end" sourceRef="o2d_invoice" targetRef="o2d_end" />
+    <bpmn:textAnnotation id="o2d_note_promise"><bpmn:text>Promise: 5 working days from stock, 6 from the mill, one more for far provinces</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_o2d_note_promise" associationDirection="None" sourceRef="o2d_note_promise" targetRef="o2d_confirm" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_order_to_delivery">
+    <bpmndi:BPMNPlane id="Plane_order_to_delivery" bpmnElement="Collaboration_order_to_delivery">
+      <bpmndi:BPMNShape id="Pool_o2d_mill_di" bpmnElement="Pool_o2d_mill" isHorizontal="true"><dc:Bounds x="120" y="60" width="2088" height="64" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Pool_o2d_ahanyar_di" bpmnElement="Pool_o2d_ahanyar" isHorizontal="true"><dc:Bounds x="120" y="160" width="2088" height="660" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_o2d_desk_di" bpmnElement="Lane_o2d_desk" isHorizontal="true"><dc:Bounds x="150" y="160" width="2058" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_o2d_warehouse_di" bpmnElement="Lane_o2d_warehouse" isHorizontal="true"><dc:Bounds x="150" y="310" width="2058" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_o2d_logistics_di" bpmnElement="Lane_o2d_logistics" isHorizontal="true"><dc:Bounds x="150" y="460" width="2058" height="230" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_o2d_finance_di" bpmnElement="Lane_o2d_finance" isHorizontal="true"><dc:Bounds x="150" y="690" width="2058" height="130" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Pool_o2d_customer_di" bpmnElement="Pool_o2d_customer" isHorizontal="true"><dc:Bounds x="120" y="856" width="2088" height="64" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_start_di" bpmnElement="o2d_start" bioc:stroke="#0E7C69" bioc:fill="#E3F4EF" color:background-color="#E3F4EF" color:border-color="#0E7C69"><dc:Bounds x="232" y="217" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="195" y="257" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_confirm_di" bpmnElement="o2d_confirm" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="332" y="195" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_gw_stock_di" bpmnElement="o2d_gw_stock" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="489" y="210" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="459" y="164" width="110" height="42" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_reserve_di" bpmnElement="o2d_reserve" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="596" y="345" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_buy_di" bpmnElement="o2d_buy" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="596" y="195" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_released_di" bpmnElement="o2d_released" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="760" y="217" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="723" y="257" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_merge_source_di" bpmnElement="o2d_merge_source" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="885" y="360" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_truck_di" bpmnElement="o2d_truck" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="992" y="490" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_at_risk_di" bpmnElement="o2d_at_risk" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1056" y="552" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1098" y="556" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_call_di" bpmnElement="o2d_call" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1164" y="595" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_informed_di" bpmnElement="o2d_informed" bioc:stroke="#B33131" bioc:fill="#FBE9E9" color:background-color="#FBE9E9" color:border-color="#B33131"><dc:Bounds x="1328" y="617" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1291" y="657" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_load_di" bpmnElement="o2d_load" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1124" y="345" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_gw_weight_di" bpmnElement="o2d_gw_weight" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1281" y="360" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="1251" y="414" width="110" height="42" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_adjust_di" bpmnElement="o2d_adjust" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1388" y="195" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_merge_weight_di" bpmnElement="o2d_merge_weight" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1545" y="360" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_dispatch_di" bpmnElement="o2d_dispatch" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1652" y="490" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_deliver_di" bpmnElement="o2d_deliver" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1784" y="490" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_invoice_di" bpmnElement="o2d_invoice" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1916" y="715" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_end_di" bpmnElement="o2d_end" bioc:stroke="#B33131" bioc:fill="#FBE9E9" color:background-color="#FBE9E9" color:border-color="#B33131"><dc:Bounds x="2080" y="737" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2043" y="777" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="o2d_note_promise_di" bpmnElement="o2d_note_promise" bioc:stroke="#8A96A8" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#8A96A8"><dc:Bounds x="287" y="358" width="190" height="54" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_o2d_start_o2d_confirm_di" bpmnElement="Flow_o2d_start_o2d_confirm"><di:waypoint x="268" y="235" /><di:waypoint x="332" y="235" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_confirm_o2d_gw_stock_di" bpmnElement="Flow_o2d_confirm_o2d_gw_stock"><di:waypoint x="432" y="235" /><di:waypoint x="489" y="235" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_gw_stock_o2d_reserve_di" bpmnElement="Flow_o2d_gw_stock_o2d_reserve"><di:waypoint x="514" y="260" /><di:waypoint x="514" y="385" /><di:waypoint x="596" y="385" /><bpmndi:BPMNLabel><dc:Bounds x="478" y="369" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_gw_stock_o2d_buy_di" bpmnElement="Flow_o2d_gw_stock_o2d_buy"><di:waypoint x="539" y="235" /><di:waypoint x="596" y="235" /><bpmndi:BPMNLabel><dc:Bounds x="545" y="218" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_o2d_buy_Pool_o2d_mill_di" bpmnElement="Message_o2d_buy_Pool_o2d_mill"><di:waypoint x="646" y="195" /><di:waypoint x="646" y="124" /><bpmndi:BPMNLabel><dc:Bounds x="651" y="152" width="53" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_Pool_o2d_mill_o2d_released_di" bpmnElement="Message_Pool_o2d_mill_o2d_released"><di:waypoint x="778" y="124" /><di:waypoint x="778" y="217" /><bpmndi:BPMNLabel><dc:Bounds x="783" y="164" width="79" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_buy_o2d_released_di" bpmnElement="Flow_o2d_buy_o2d_released"><di:waypoint x="696" y="235" /><di:waypoint x="760" y="235" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_reserve_o2d_merge_source_di" bpmnElement="Flow_o2d_reserve_o2d_merge_source"><di:waypoint x="696" y="385" /><di:waypoint x="885" y="385" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_released_o2d_merge_source_di" bpmnElement="Flow_o2d_released_o2d_merge_source"><di:waypoint x="796" y="235" /><di:waypoint x="910" y="235" /><di:waypoint x="910" y="360" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_merge_source_o2d_truck_di" bpmnElement="Flow_o2d_merge_source_o2d_truck"><di:waypoint x="910" y="410" /><di:waypoint x="910" y="530" /><di:waypoint x="992" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_truck_o2d_load_di" bpmnElement="Flow_o2d_truck_o2d_load"><di:waypoint x="1092" y="530" /><di:waypoint x="1108" y="530" /><di:waypoint x="1108" y="385" /><di:waypoint x="1124" y="385" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_at_risk_o2d_call_di" bpmnElement="Flow_o2d_at_risk_o2d_call"><di:waypoint x="1074" y="588" /><di:waypoint x="1074" y="635" /><di:waypoint x="1164" y="635" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_call_o2d_informed_di" bpmnElement="Flow_o2d_call_o2d_informed"><di:waypoint x="1264" y="635" /><di:waypoint x="1328" y="635" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_o2d_call_Pool_o2d_customer_di" bpmnElement="Message_o2d_call_Pool_o2d_customer"><di:waypoint x="1214" y="675" /><di:waypoint x="1214" y="856" /><bpmndi:BPMNLabel><dc:Bounds x="1219" y="758" width="53" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_load_o2d_gw_weight_di" bpmnElement="Flow_o2d_load_o2d_gw_weight"><di:waypoint x="1224" y="385" /><di:waypoint x="1281" y="385" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_gw_weight_o2d_adjust_di" bpmnElement="Flow_o2d_gw_weight_o2d_adjust"><di:waypoint x="1306" y="360" /><di:waypoint x="1306" y="235" /><di:waypoint x="1388" y="235" /><bpmndi:BPMNLabel><dc:Bounds x="1270" y="219" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_gw_weight_o2d_merge_weight_di" bpmnElement="Flow_o2d_gw_weight_o2d_merge_weight"><di:waypoint x="1331" y="385" /><di:waypoint x="1545" y="385" /><bpmndi:BPMNLabel><dc:Bounds x="1337" y="368" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_adjust_o2d_merge_weight_di" bpmnElement="Flow_o2d_adjust_o2d_merge_weight"><di:waypoint x="1488" y="235" /><di:waypoint x="1570" y="235" /><di:waypoint x="1570" y="360" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_merge_weight_o2d_dispatch_di" bpmnElement="Flow_o2d_merge_weight_o2d_dispatch"><di:waypoint x="1570" y="410" /><di:waypoint x="1570" y="530" /><di:waypoint x="1652" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_dispatch_o2d_deliver_di" bpmnElement="Flow_o2d_dispatch_o2d_deliver"><di:waypoint x="1752" y="530" /><di:waypoint x="1784" y="530" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_o2d_deliver_Pool_o2d_customer_di" bpmnElement="Message_o2d_deliver_Pool_o2d_customer"><di:waypoint x="1816" y="570" /><di:waypoint x="1816" y="856" /><bpmndi:BPMNLabel><dc:Bounds x="1758" y="706" width="53" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_Pool_o2d_customer_o2d_deliver_di" bpmnElement="Message_Pool_o2d_customer_o2d_deliver"><di:waypoint x="1852" y="856" /><di:waypoint x="1852" y="570" /><bpmndi:BPMNLabel><dc:Bounds x="1857" y="706" width="66" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_deliver_o2d_invoice_di" bpmnElement="Flow_o2d_deliver_o2d_invoice"><di:waypoint x="1884" y="530" /><di:waypoint x="1966" y="530" /><di:waypoint x="1966" y="715" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_o2d_invoice_o2d_end_di" bpmnElement="Flow_o2d_invoice_o2d_end"><di:waypoint x="2016" y="755" /><di:waypoint x="2080" y="755" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_o2d_note_promise_di" bpmnElement="Association_o2d_note_promise"><di:waypoint x="382" y="358" /><di:waypoint x="382" y="275" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

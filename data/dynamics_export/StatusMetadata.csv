@@ -49,3 +49,18 @@ activitypointer,2,3,False,1033,Canceled
 activitypointer,3,4,False,1033,Scheduled
 product,0,1,False,1033,Active
 product,1,2,False,1033,Retired
+ahn_shipment,0,1,False,1033,Planned
+ahn_shipment,0,100000000,False,1033,Loading
+ahn_shipment,0,100000001,False,1033,In Transit
+ahn_shipment,1,2,False,1033,Delivered
+incident,0,1,False,1033,In Progress
+incident,0,2,False,1033,On Hold
+incident,0,3,False,1033,Waiting for Details
+incident,0,4,False,1033,Researching
+incident,1,5,False,1033,Problem Solved
+incident,1,1000,False,1033,Information Provided
+incident,2,6,False,1033,Canceled
+incident,2,2000,False,1033,Merged
+incidentresolution,0,1,False,1033,Open
+incidentresolution,1,2,False,1033,Completed
+incidentresolution,2,3,False,1033,Canceled

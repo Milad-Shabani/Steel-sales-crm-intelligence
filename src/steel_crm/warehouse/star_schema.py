@@ -1,10 +1,11 @@
 """Model the decoded Dataverse tables as a star schema.
 
-Dimensions: date, account, product, sales rep, campaign. Facts: leads,
-opportunities (one row per deal, with the features the win model uses),
-order lines (tons, list price, discount, cost and margin), invoices
-(with days late), campaign responses, activities and weekly pipeline
-snapshots. The same tables are written to SQLite for the analytics and as
+Dimensions: date, account, product, user (sales reps and service agents),
+campaign. Facts: leads, opportunities (one row per deal, with the features
+the win model uses), order lines (tons, list price, discount, cost and
+margin), invoices (with days late), shipments (each step's time, on time,
+in full), service cases (SLA met, claim upheld, satisfaction), campaign
+responses, activities and weekly pipeline snapshots. The same tables are written to SQLite for the analytics and as
 CSV files that load straight into Power BI.
 """
 
@@ -39,6 +40,8 @@ class Warehouse:
     fact_pipeline_snapshot: pd.DataFrame
     price_index: pd.DataFrame
     as_of: pd.Timestamp
+    fact_shipment: pd.DataFrame | None = None
+    fact_case: pd.DataFrame | None = None
 
     def tables(self) -> dict[str, pd.DataFrame]:
         return {k: v for k, v in self.__dict__.items() if isinstance(v, pd.DataFrame)}
@@ -212,9 +215,77 @@ def build_warehouse(export: DataverseExport) -> Warehouse:
     dim_date = pd.DataFrame({"date": days, "year": days.year, "quarter": days.quarter, "month": days.month,
                              "month_name": days.strftime("%b"), "weekday": days.strftime("%a")})
 
+    fact_shipment = _shipments(t, acc_info)
+    fact_case = _cases(t, acc_info, rep_name, as_of)
     return Warehouse(dim_date, dim_account, dim_product, dim_user, dim_campaign, fact_lead, fact_opportunity,
                      fact_sales_line, fact_invoice, fact_campaign_response, fact_activity,
-                     fact_pipeline_snapshot, _price_index(t), as_of)
+                     fact_pipeline_snapshot, _price_index(t), as_of, fact_shipment, fact_case)
+
+
+WEIGHT_TOLERANCE = 0.005  # a load within +/-0.5% of the ordered tons is "in full"
+
+
+def _hours(a: pd.Series, b: pd.Series) -> pd.Series:
+    return ((b - a).dt.total_seconds() / 3600).round(1)
+
+
+def _shipments(t, acc_info) -> pd.DataFrame:
+    sh, so = t["ahn_shipment"], t["salesorder"].set_index("salesorderid")
+    order_date = sh["ahn_salesorderid"].map(so["submitdate"])
+    promised = sh["ahn_salesorderid"].map(so["requestdeliveryby"])
+    delivered = sh["ahn_deliveredon"]
+    variance = sh["ahn_loadedtons"] / sh["ahn_orderedtons"] - 1
+    f = pd.DataFrame({
+        "shipmentid": sh["ahn_shipmentid"], "shipment": sh["ahn_name"], "salesorderid": sh["ahn_salesorderid"],
+        "ordernumber": sh["ahn_salesorderid"].map(so["ordernumber"]), "accountid": sh["ahn_customerid"],
+        "industry": sh["ahn_customerid"].map(acc_info["industry"]),
+        "province": sh["ahn_customerid"].map(acc_info["province"]),
+        "warehouse": sh["ahn_warehouse_label"], "sourcing": sh["ahn_sourcing_label"],
+        "carrier": sh["ahn_carrier_label"], "status": sh["statuscode_label"],
+        "ordered_tons": sh["ahn_orderedtons"], "loaded_tons": sh["ahn_loadedtons"],
+        "weight_variance": variance, "truckloads": sh["ahn_truckloads"],
+        "order_value": sh["ahn_salesorderid"].map(so["totalamount"]),
+        "order_date": order_date, "promised": promised, "ready": sh["ahn_stockreadyon"],
+        "loaded": sh["ahn_loadedon"], "dispatched": sh["ahn_dispatchedon"], "delivered": delivered,
+        "pod": sh["ahn_podreceived"],
+    })
+    f["hours_to_ready"] = _hours(order_date, f["ready"])
+    f["yard_hours"] = _hours(f["ready"], f["loaded"])
+    f["loading_hours"] = _hours(f["loaded"], f["dispatched"])
+    f["transit_hours"] = _hours(f["dispatched"], delivered)
+    f["days_to_deliver"] = (_hours(order_date, delivered) / 24).round(2)
+    f["days_late"] = (delivered.dt.normalize() - promised).dt.days
+    is_delivered = delivered.notna()
+    f["on_time"] = (f["days_late"] <= 0).where(is_delivered)
+    f["in_full"] = (variance.abs() <= WEIGHT_TOLERANCE).where(is_delivered)
+    f["otif"] = (f["on_time"].astype("boolean") & f["in_full"].astype("boolean")).where(is_delivered)
+    f["month"] = order_date.dt.to_period("M")
+    return f
+
+
+def _cases(t, acc_info, user_name, as_of) -> pd.DataFrame:
+    c = t["incident"]
+    resolved = c["incidentid"].map(t["incidentresolution"].set_index("incidentid")["actualend"])
+    f = pd.DataFrame({
+        "incidentid": c["incidentid"], "ticket": c["ticketnumber"], "accountid": c["customerid"],
+        "industry": c["customerid"].map(acc_info["industry"]), "salesorderid": c["ahn_salesorderid"],
+        "shipmentid": c["ahn_shipmentid"], "category": c["ahn_casecategory_label"],
+        "case_type": c["casetypecode_label"], "team": c["ahn_investigatingteam_label"],
+        "priority": c["prioritycode_label"], "origin": c["caseorigincode_label"],
+        "owner": c["ownerid"].map(user_name), "status": c["statuscode_label"], "is_open": c["statecode"] == 0,
+        "created": c["createdon"], "response_by": c["responseby"], "resolve_by": c["resolveby"],
+        "first_response": c["ahn_firstresponseon"], "resolved": resolved,
+        "escalated": c["isescalated"].astype(bool), "upheld": c["ahn_claimupheld"],
+        "compensation": c["ahn_compensationamount"], "csat": c["customersatisfactioncode"],
+    })
+    f["hours_to_first_response"] = _hours(f["created"], f["first_response"])
+    f["hours_to_resolve"] = _hours(f["created"], resolved)
+    f["response_sla_met"] = (f["first_response"] <= f["response_by"]).where(f["first_response"].notna())
+    # an open case already past its resolve-by time has breached; one still inside it is undecided
+    met = (resolved <= f["resolve_by"]).where(resolved.notna())
+    f["resolve_sla_met"] = met.mask(resolved.isna() & (f["resolve_by"] < as_of), False)
+    f["month"] = f["created"].dt.to_period("M")
+    return f
 
 
 def write_warehouse(wh: Warehouse, db_path: Path, csv_dir: Path | None = None) -> None:

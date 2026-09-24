@@ -1,5 +1,6 @@
-"""End-to-end run: Dataverse export -> checks -> star schema -> analytics and
-win model -> SQLite + Power BI CSVs + dashboard data."""
+"""End-to-end run: Dataverse export -> checks -> star schema -> analytics, win model
+and process measures -> SQLite + Power BI CSVs + dashboard data (with the BPMN
+diagrams and the numbers on each step)."""
 
 from __future__ import annotations
 
@@ -8,11 +9,13 @@ import logging
 import time
 from pathlib import Path
 
-from .analytics import accounts, marketing, sales
+from .analytics import accounts, marketing, operations, sales
 from .analytics.funnel import sales_funnel
 from .analytics.insights import build_insights
 from .ingest.dataverse import load_export
 from .models.win_probability import train_and_score
+from .processes.bpmn import process_payload
+from .processes.definitions import all_processes
 from .quality.checks import assert_passes, run_checks
 from .reporting.dashboard_data import records, write_dashboard_data
 from .warehouse.star_schema import build_warehouse, write_warehouse
@@ -50,8 +53,10 @@ def run(export_dir: Path = Path("data/dynamics_export"), out_dir: Path = Path("d
     reps = sales.reps(wh, model.scored)
     risk, risk_summary = accounts.at_risk(wh)
     pipe = sales.pipeline(model.scored)
+    dlv, cash, svc = operations.delivery(wh), operations.collections(wh), operations.service(wh)
+    overlays = operations.process_overlays(wh, dlv, cash, svc, ar)
     insights = build_insights(k, win, model.metrics, model.calibration.reset_index(names="bin"), channels, monthly,
-                              ar["by_industry"], risk_summary, reps, disc_margin)
+                              ar["by_industry"], risk_summary, reps, disc_margin, {"delivery": dlv, "service": svc})
 
     top_open = pipe["top"].merge(wh.dim_account[["accountid", "name"]], on="accountid")
     payload = {
@@ -79,6 +84,18 @@ def run(export_dir: Path = Path("data/dynamics_export"), out_dir: Path = Path("d
         "at_risk": records(risk, ["name", "industry", "province", "owner", "orders", "revenue", "last_order",
                                   "days_silent", "revenue_prior_year"]),
         "at_risk_summary": risk_summary,
+        "operations": {
+            "delivery": dlv["kpi"], "by_sourcing": records(dlv["by_sourcing"]),
+            "by_carrier": records(dlv["by_carrier"]), "by_warehouse": records(dlv["by_warehouse"]),
+            "weight_hist": dlv["weight_hist"], "tolerance": dlv["tolerance"],
+            "delivery_monthly": records(dlv["monthly"]),
+            "collections": cash, "service": svc["kpi"], "by_category": records(svc["by_category"]),
+            "by_agent": records(svc["by_agent"]), "csat": svc["csat"], "churn": svc["churn"],
+            "open_cases": records(svc["open"].head(8), ["ticket", "name", "category", "priority", "owner", "age_days",
+                                                        "breached"]),
+            "lead_to_cash": operations.lead_to_cash(wh),
+        },
+        "processes": [process_payload(p, overlays) for p in all_processes()],
         "data_quality": {"checks": int(len(dq)), "passed": int((dq["status"] == "pass").sum()),
                          "warnings": int((dq["status"] == "warn").sum()),
                          "rows": int(sum(len(d) for d in export.tables.values())),

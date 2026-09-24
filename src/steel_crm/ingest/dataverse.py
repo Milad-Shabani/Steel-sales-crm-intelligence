@@ -1,4 +1,4 @@
-"""Read a Dynamics 365 Sales export (Dataverse tables as CSV) into DataFrames.
+"""Read a Dynamics 365 export (Dataverse tables as CSV) into DataFrames.
 
 Three things turn the raw export into something analysable:
 
@@ -49,8 +49,8 @@ SCHEMA: dict[str, list[str]] = {
     "opportunitycompetitors": ["opportunityid", "competitorid"],
     "quote": ["quoteid", "opportunityid", "revisionnumber", "createdon", "effectivefrom", "effectiveto",
               "discountpercentage", "totalamount", "statecode", "statuscode"],
-    "salesorder": ["salesorderid", "opportunityid", "customerid", "ownerid", "submitdate", "datefulfilled",
-                   "totalamount", "statecode"],
+    "salesorder": ["salesorderid", "opportunityid", "customerid", "ownerid", "submitdate", "requestdeliveryby",
+                   "datefulfilled", "totalamount", "statecode"],
     "salesorderdetail": ["salesorderdetailid", "salesorderid", "productid", "quantity", "priceperunit",
                          "baseamount", "manualdiscountamount", "extendedamount", "ahn_costperton"],
     "invoice": ["invoiceid", "salesorderid", "customerid", "createdon", "duedate", "totalamount",
@@ -59,6 +59,14 @@ SCHEMA: dict[str, list[str]] = {
                         "ownerid", "createdon"],
     "ahn_pipelinesnapshot": ["ahn_snapshotdate", "ahn_opportunityid", "ownerid", "ahn_stepname",
                              "ahn_closeprobability", "ahn_estimatedvalue", "ahn_forecastcategory"],
+    "ahn_shipment": ["ahn_shipmentid", "ahn_salesorderid", "ahn_customerid", "ahn_warehouse", "ahn_sourcing",
+                     "ahn_carrier", "ahn_orderedtons", "ahn_loadedtons", "ahn_stockreadyon", "ahn_loadedon",
+                     "ahn_dispatchedon", "ahn_deliveredon", "ahn_podreceived", "createdon", "statecode"],
+    "incident": ["incidentid", "ticketnumber", "customerid", "ahn_salesorderid", "casetypecode",
+                 "ahn_casecategory", "ahn_investigatingteam", "prioritycode", "caseorigincode", "ownerid",
+                 "createdon", "responseby", "resolveby", "ahn_firstresponseon", "isescalated",
+                 "ahn_claimupheld", "ahn_compensationamount", "customersatisfactioncode", "statecode"],
+    "incidentresolution": ["activityid", "incidentid", "actualend", "timespent"],
 }
 METADATA_FILES = ["OptionsetMetadata", "GlobalOptionsetMetadata", "StateMetadata", "StatusMetadata"]
 

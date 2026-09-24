@@ -32,7 +32,7 @@ After ingest every coded column has a `<column>_label` next to it, and every tim
 | `opportunitycompetitors` | opportunitycompetitorid, opportunityid, competitorid | N:N between opportunity and competitor |
 | `competitor` | competitorid, name | Includes "Mill Direct Sales", a mill selling to the customer directly |
 | `quote` | quoteid, quotenumber, revisionnumber, opportunityid, createdon, effectivefrom, effectiveto, discountpercentage, totalamount, statecode, statuscode | Valid for three days (`effectiveto`). A new revision is issued when the price moves; old ones are status 7 Revised |
-| `salesorder` | salesorderid, ordernumber, opportunityid, quoteid, customerid, ownerid, submitdate, datefulfilled, totalamount, paymenttermscode, statecode | State 4 Invoiced once delivered |
+| `salesorder` | salesorderid, ordernumber, opportunityid, quoteid, customerid, ownerid, submitdate, requestdeliveryby, datefulfilled, totalamount, paymenttermscode, statecode | `requestdeliveryby` is the promised delivery date; `datefulfilled` the delivery. State 4 Invoiced once delivered |
 | `salesorderdetail` | salesorderdetailid, salesorderid, productid, quantity (tons), priceperunit (list price per ton), baseamount, manualdiscountamount, extendedamount, **ahn_costperton** | `extendedamount = baseamount - manualdiscountamount`. `ahn_costperton` is the mill purchase cost per ton |
 | `invoice` | invoiceid, invoicenumber, salesorderid, customerid, createdon, duedate, totalamount, paymenttermscode, **ahn_paidon**, statecode | State 2 Paid when `ahn_paidon` is set; open invoices are state 0 |
 
@@ -42,10 +42,23 @@ After ingest every coded column has a `<column>_label` next to it, and every tim
 |---|---|---|
 | `product` | productid, productnumber, name, **ahn_productgroup**, **ahn_grade**, defaultuomid | 23 products in 7 groups: Rebar, Beams & Sections, Hot-Rolled Sheet, Cold-Rolled Sheet, Galvanized Sheet, Pipes & Profiles, Wire Rod |
 | `pricelevel` / `productpricelevel` | pricelevelid, name, begindate, enddate / productid, amount | One price list per month; `amount` is the list price per ton |
-| `systemuser` | systemuserid, fullname, title, territoryid | 10 account managers and the head of sales |
+| `systemuser` | systemuserid, fullname, title, territoryid | 10 account managers, the head of sales and 4 customer service agents (no territory) |
 | `territory` | territoryid, name | Tehran & North, Central, East, North-West, South-West, South |
 | `activitypointer` | activityid, activitytypecode (phonecall, email, appointment, task), regardingobjectid, regardingobjecttypecode (lead, opportunity, account), ownerid, createdon, actualend | |
 | `ahn_pipelinesnapshot` (custom) | ahn_snapshotdate, ahn_opportunityid, ownerid, ahn_stepname, ahn_closeprobability, ahn_estimatedvalue, ahn_forecastcategory, ahn_estimatedclosedate | One row per open deal when it is created and every Saturday after, as a scheduled flow would keep. Dynamics overwrites `closeprobability` on close, so this is what the rep's forecast looked like before the outcome |
+
+### Delivery (custom table)
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `ahn_shipment` | ahn_shipmentid, ahn_name, ahn_salesorderid → salesorder, ahn_customerid → account, **ahn_warehouse**, **ahn_sourcing**, **ahn_carrier**, ahn_orderedtons, ahn_loadedtons, ahn_truckloads, ahn_stockreadyon, ahn_loadedon, ahn_dispatchedon, ahn_deliveredon, ahn_waybillnumber, ahn_podreceived, createdon, statecode, statuscode | One row per sales order, fed from the warehouse and weighbridge by a flow. `ahn_warehouse`: Tehran - Shadabad, Isfahan, Ahvaz, Mashhad, Tabriz, Bandar Abbas (each serves its provinces). `ahn_sourcing`: From stock, Mill direct (IME purchase). `ahn_carrier`: Own fleet, Barbari Sepehr, Tarabar Zagros, Customer pickup. `ahn_loadedtons` is the weighbridge weight; `ahn_stockreadyon` is when stock was reserved or the mill released the load. Status 1 Planned, 100000000 Loading, 100000001 In Transit, 2 Delivered |
+
+### Customer service (Dynamics 365 Customer Service)
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `incident` | incidentid, ticketnumber, title, customerid → account, **ahn_salesorderid**, **ahn_shipmentid**, casetypecode, **ahn_casecategory**, **ahn_investigatingteam**, prioritycode, caseorigincode, ownerid, createdon, responseby, resolveby, firstresponsesent, **ahn_firstresponseon**, isescalated, escalatedon, **ahn_claimupheld**, **ahn_compensationamount**, customersatisfactioncode, statecode, statuscode | A case. `casetypecode` 1 Question, 2 Problem, 3 Request; `prioritycode` 1 High, 2 Normal, 3 Low; `caseorigincode` 1 Phone, 2 Email, 3 Web. `responseby` / `resolveby` come from the SLA (2 / 4 / 8 hours to reply, 2 / 5 / 10 days to resolve by priority). `ahn_casecategory`: Weight discrepancy, Late delivery, Quality / spec claim, Damaged or rusted material, Invoice dispute, Mill certificate request, Delivery change request. `customersatisfactioncode` 1 Very Dissatisfied to 5 Very Satisfied, from the survey. State 0 Active, 1 Resolved; status 5 Problem Solved, 1000 Information Provided |
+| `incidentresolution` | activityid, incidentid → incident, subject, actualend, timespent, ownerid | The resolution activity: `actualend` is when the case was resolved |
 
 ## Star schema (`data/processed/steel_crm.db`, `data/processed/powerbi/`)
 
@@ -54,12 +67,14 @@ After ingest every coded column has a `<column>_label` next to it, and every tim
 | `dim_date` | day | date, year, quarter, month, month_name, weekday |
 | `dim_account` | account | name, industry, province, territory, owner, payment_terms, credit_limit, acquisition_channel |
 | `dim_product` | product | productnumber, name, product_group, grade |
-| `dim_user` | rep | fullname, title, territory |
+| `dim_user` | user | fullname, title, territory (reps and service agents) |
 | `dim_campaign` | campaign | name, channel, campaign_type, start, end, budgetedcost, cost |
 | `fact_lead` | lead | created, decided, status, source, channel, industry, estimated_tons, opportunityid |
 | `fact_opportunity` | deal | channel, industry, product_group, tons, is_repeat, created, close_date, state, won, loss_reason, stage, estimated_value, actual_value, crm_probability, rep_prob_last, hours_to_first_quote, first_quote_discount, n_quotes, activities_first_3d, competitor, price_trend, cycle_days, **p_model** |
 | `fact_sales_line` | order line | order_date, product, product_group, tons, list_price, gross, discount, net, cost, margin, industry, province |
 | `fact_invoice` | invoice | invoice_date, due_date, paid_on, amount, is_open, days_to_pay, days_late |
+| `fact_shipment` | order | warehouse, sourcing, carrier, ordered_tons, loaded_tons, weight_variance, order_date, promised, ready, loaded, dispatched, delivered, pod, hours_to_ready, yard_hours, loading_hours, transit_hours, days_to_deliver, days_late, on_time, in_full, otif |
+| `fact_case` | case | category, case_type, team, priority, origin, owner, created, response_by, resolve_by, first_response, resolved, escalated, upheld, compensation, csat, hours_to_first_response, hours_to_resolve, response_sla_met, resolve_sla_met |
 | `fact_campaign_response` | response | campaignid, received, response, channel |
 | `fact_activity` | activity | activitytypecode, regardingobjecttypecode, regardingobjectid, ownerid, created |
 | `fact_pipeline_snapshot` | deal × week | snapshot_date, stage, close_probability, estimated_value, forecast_category |

@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" id="Definitions_case_to_resolution" targetNamespace="https://github.com/Milad-Shabani/Steel-sales-crm-intelligence" exporter="steel_crm.processes" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_case_to_resolution">
+    <bpmn:documentation>Dynamics 365 Customer Service: from a customer's complaint or request to a closed case.</bpmn:documentation>
+    <bpmn:participant id="Pool_c2r_customer" name="Customer" />
+    <bpmn:participant id="Pool_c2r_ahanyar" name="Ahanyar Steel Trading Co." processRef="Process_case_to_resolution" />
+    <bpmn:messageFlow id="Message_Pool_c2r_customer_c2r_start" name="Complaint or request" sourceRef="Pool_c2r_customer" targetRef="c2r_start" />
+    <bpmn:messageFlow id="Message_c2r_respond_Pool_c2r_customer" name="First response" sourceRef="c2r_respond" targetRef="Pool_c2r_customer" />
+    <bpmn:messageFlow id="Message_c2r_survey_Pool_c2r_customer" name="Survey" sourceRef="c2r_survey" targetRef="Pool_c2r_customer" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_case_to_resolution" name="Case to resolution" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_case_to_resolution">
+      <bpmn:lane id="Lane_c2r_service" name="Customer service">
+        <bpmn:flowNodeRef>c2r_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_create</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_respond</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_gw_type</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_merge_claim</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_gw_upheld</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_explain</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_merge_out</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_resolve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_survey</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_c2r_logistics" name="Warehouse and logistics">
+        <bpmn:flowNodeRef>c2r_check</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_c2r_quality" name="Quality">
+        <bpmn:flowNodeRef>c2r_inspect</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_sla</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_escalate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_escalated</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_c2r_finance" name="Finance">
+        <bpmn:flowNodeRef>c2r_review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>c2r_credit</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="c2r_start" name="Customer calls, emails or writes on the portal">
+      <bpmn:documentation>incident.caseorigincode: Phone, Email, Web</bpmn:documentation>
+      <bpmn:outgoing>Flow_c2r_start_c2r_create</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_c2r_start" />
+    </bpmn:startEvent>
+    <bpmn:userTask id="c2r_create" name="Create the case, classify it, set the priority">
+      <bpmn:documentation>incident: ahn_casecategory, casetypecode, prioritycode; the SLA sets responseby and resolveby</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_start_c2r_create</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_create_c2r_respond</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="c2r_respond" name="Send the first response">
+      <bpmn:documentation>incident.ahn_firstresponseon against responseby</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_create_c2r_respond</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_respond_c2r_gw_type</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:exclusiveGateway id="c2r_gw_type" name="What is it?">
+      <bpmn:incoming>Flow_c2r_respond_c2r_gw_type</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_gw_type_c2r_request</bpmn:outgoing>
+      <bpmn:outgoing>Flow_c2r_gw_type_c2r_check</bpmn:outgoing>
+      <bpmn:outgoing>Flow_c2r_gw_type_c2r_inspect</bpmn:outgoing>
+      <bpmn:outgoing>Flow_c2r_gw_type_c2r_review</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="c2r_request" name="Send the certificate or change the delivery">
+      <bpmn:documentation>Mill certificate request, Delivery change request (casetypecode Request)</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_gw_type_c2r_request</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_request_c2r_merge_out</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="c2r_check" name="Check the weighbridge ticket and waybill">
+      <bpmn:documentation>Weight discrepancy, Late delivery: ahn_shipment weights and times</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_gw_type_c2r_check</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_check_c2r_merge_claim</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="c2r_inspect" name="Inspect at site, claim against the mill">
+      <bpmn:documentation>Quality / spec claim, Damaged or rusted material</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_gw_type_c2r_inspect</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_inspect_c2r_merge_claim</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="c2r_sla" name="75% of the resolution SLA used" cancelActivity="false" attachedToRef="c2r_inspect">
+      <bpmn:documentation>incident.isescalated, escalatedon</bpmn:documentation>
+      <bpmn:outgoing>Flow_c2r_sla_c2r_escalate</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerDef_c2r_sla">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT36H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="c2r_escalate" name="Escalate to the service lead">
+      <bpmn:documentation>incident.isescalated</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_sla_c2r_escalate</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_escalate_c2r_escalated</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="c2r_escalated" name="Lead alerted">
+      <bpmn:incoming>Flow_c2r_escalate_c2r_escalated</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="c2r_review" name="Review the invoice and the POD">
+      <bpmn:documentation>Invoice dispute: invoice, ahn_shipment.ahn_podreceived</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_gw_type_c2r_review</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_review_c2r_merge_claim</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="c2r_merge_claim" name="">
+      <bpmn:incoming>Flow_c2r_check_c2r_merge_claim</bpmn:incoming>
+      <bpmn:incoming>Flow_c2r_inspect_c2r_merge_claim</bpmn:incoming>
+      <bpmn:incoming>Flow_c2r_review_c2r_merge_claim</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_merge_claim_c2r_gw_upheld</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="c2r_gw_upheld" name="Claim upheld?">
+      <bpmn:incoming>Flow_c2r_merge_claim_c2r_gw_upheld</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_gw_upheld_c2r_credit</bpmn:outgoing>
+      <bpmn:outgoing>Flow_c2r_gw_upheld_c2r_explain</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="c2r_credit" name="Issue a credit note or a replacement">
+      <bpmn:documentation>incident.ahn_claimupheld, ahn_compensationamount</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_gw_upheld_c2r_credit</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_credit_c2r_merge_out</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="c2r_explain" name="Explain the finding to the customer">
+      <bpmn:incoming>Flow_c2r_gw_upheld_c2r_explain</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_explain_c2r_merge_out</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="c2r_merge_out" name="">
+      <bpmn:incoming>Flow_c2r_credit_c2r_merge_out</bpmn:incoming>
+      <bpmn:incoming>Flow_c2r_explain_c2r_merge_out</bpmn:incoming>
+      <bpmn:incoming>Flow_c2r_request_c2r_merge_out</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_merge_out_c2r_resolve</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="c2r_resolve" name="Resolve the case">
+      <bpmn:documentation>incidentresolution.actualend against incident.resolveby</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_merge_out_c2r_resolve</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_resolve_c2r_survey</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="c2r_survey" name="Send the satisfaction survey">
+      <bpmn:documentation>incident.customersatisfactioncode (Customer Voice)</bpmn:documentation>
+      <bpmn:incoming>Flow_c2r_resolve_c2r_survey</bpmn:incoming>
+      <bpmn:outgoing>Flow_c2r_survey_c2r_end</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="c2r_end" name="Case closed">
+      <bpmn:incoming>Flow_c2r_survey_c2r_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_c2r_start_c2r_create" sourceRef="c2r_start" targetRef="c2r_create" />
+    <bpmn:sequenceFlow id="Flow_c2r_create_c2r_respond" sourceRef="c2r_create" targetRef="c2r_respond" />
+    <bpmn:sequenceFlow id="Flow_c2r_respond_c2r_gw_type" sourceRef="c2r_respond" targetRef="c2r_gw_type" />
+    <bpmn:sequenceFlow id="Flow_c2r_gw_type_c2r_request" name="Request" sourceRef="c2r_gw_type" targetRef="c2r_request" />
+    <bpmn:sequenceFlow id="Flow_c2r_gw_type_c2r_check" name="Weight or late" sourceRef="c2r_gw_type" targetRef="c2r_check" />
+    <bpmn:sequenceFlow id="Flow_c2r_gw_type_c2r_inspect" name="Quality or damage" sourceRef="c2r_gw_type" targetRef="c2r_inspect" />
+    <bpmn:sequenceFlow id="Flow_c2r_gw_type_c2r_review" name="Invoice" sourceRef="c2r_gw_type" targetRef="c2r_review" />
+    <bpmn:sequenceFlow id="Flow_c2r_check_c2r_merge_claim" sourceRef="c2r_check" targetRef="c2r_merge_claim" />
+    <bpmn:sequenceFlow id="Flow_c2r_inspect_c2r_merge_claim" sourceRef="c2r_inspect" targetRef="c2r_merge_claim" />
+    <bpmn:sequenceFlow id="Flow_c2r_review_c2r_merge_claim" sourceRef="c2r_review" targetRef="c2r_merge_claim" />
+    <bpmn:sequenceFlow id="Flow_c2r_sla_c2r_escalate" sourceRef="c2r_sla" targetRef="c2r_escalate" />
+    <bpmn:sequenceFlow id="Flow_c2r_escalate_c2r_escalated" sourceRef="c2r_escalate" targetRef="c2r_escalated" />
+    <bpmn:sequenceFlow id="Flow_c2r_merge_claim_c2r_gw_upheld" sourceRef="c2r_merge_claim" targetRef="c2r_gw_upheld" />
+    <bpmn:sequenceFlow id="Flow_c2r_gw_upheld_c2r_credit" name="Yes" sourceRef="c2r_gw_upheld" targetRef="c2r_credit" />
+    <bpmn:sequenceFlow id="Flow_c2r_gw_upheld_c2r_explain" name="No" sourceRef="c2r_gw_upheld" targetRef="c2r_explain" />
+    <bpmn:sequenceFlow id="Flow_c2r_credit_c2r_merge_out" sourceRef="c2r_credit" targetRef="c2r_merge_out" />
+    <bpmn:sequenceFlow id="Flow_c2r_explain_c2r_merge_out" sourceRef="c2r_explain" targetRef="c2r_merge_out" />
+    <bpmn:sequenceFlow id="Flow_c2r_request_c2r_merge_out" sourceRef="c2r_request" targetRef="c2r_merge_out" />
+    <bpmn:sequenceFlow id="Flow_c2r_merge_out_c2r_resolve" sourceRef="c2r_merge_out" targetRef="c2r_resolve" />
+    <bpmn:sequenceFlow id="Flow_c2r_resolve_c2r_survey" sourceRef="c2r_resolve" targetRef="c2r_survey" />
+    <bpmn:sequenceFlow id="Flow_c2r_survey_c2r_end" sourceRef="c2r_survey" targetRef="c2r_end" />
+    <bpmn:textAnnotation id="c2r_note_sla"><bpmn:text>SLA by priority: first response in 2, 4 or 8 hours; resolved in 2, 5 or 10 days</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_c2r_note_sla" associationDirection="None" sourceRef="c2r_note_sla" targetRef="c2r_create" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_case_to_resolution">
+    <bpmndi:BPMNPlane id="Plane_case_to_resolution" bpmnElement="Collaboration_case_to_resolution">
+      <bpmndi:BPMNShape id="Pool_c2r_customer_di" bpmnElement="Pool_c2r_customer" isHorizontal="true"><dc:Bounds x="120" y="60" width="1692" height="64" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Pool_c2r_ahanyar_di" bpmnElement="Pool_c2r_ahanyar" isHorizontal="true"><dc:Bounds x="120" y="160" width="1692" height="750" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_c2r_service_di" bpmnElement="Lane_c2r_service" isHorizontal="true"><dc:Bounds x="150" y="160" width="1662" height="250" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_c2r_logistics_di" bpmnElement="Lane_c2r_logistics" isHorizontal="true"><dc:Bounds x="150" y="410" width="1662" height="140" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_c2r_quality_di" bpmnElement="Lane_c2r_quality" isHorizontal="true"><dc:Bounds x="150" y="550" width="1662" height="220" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_c2r_finance_di" bpmnElement="Lane_c2r_finance" isHorizontal="true"><dc:Bounds x="150" y="770" width="1662" height="140" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_start_di" bpmnElement="c2r_start" bioc:stroke="#0E7C69" bioc:fill="#E3F4EF" color:background-color="#E3F4EF" color:border-color="#0E7C69"><dc:Bounds x="232" y="267" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="195" y="307" width="110" height="56" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_create_di" bpmnElement="c2r_create" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="332" y="245" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_respond_di" bpmnElement="c2r_respond" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="464" y="245" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_gw_type_di" bpmnElement="c2r_gw_type" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="621" y="260" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="677" y="278" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_request_di" bpmnElement="c2r_request" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="728" y="165" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_check_di" bpmnElement="c2r_check" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="728" y="440" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_inspect_di" bpmnElement="c2r_inspect" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="728" y="580" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_sla_di" bpmnElement="c2r_sla" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="792" y="642" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="755" y="682" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_escalate_di" bpmnElement="c2r_escalate" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="952" y="682" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_escalated_di" bpmnElement="c2r_escalated" bioc:stroke="#B33131" bioc:fill="#FBE9E9" color:background-color="#FBE9E9" color:border-color="#B33131"><dc:Bounds x="1116" y="704" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1079" y="744" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_review_di" bpmnElement="c2r_review" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="728" y="800" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_merge_claim_di" bpmnElement="c2r_merge_claim" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="885" y="260" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_gw_upheld_di" bpmnElement="c2r_gw_upheld" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1017" y="260" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="987" y="242" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_credit_di" bpmnElement="c2r_credit" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1124" y="800" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_explain_di" bpmnElement="c2r_explain" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1124" y="245" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_merge_out_di" bpmnElement="c2r_merge_out" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1281" y="260" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_resolve_di" bpmnElement="c2r_resolve" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1388" y="245" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_survey_di" bpmnElement="c2r_survey" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1520" y="245" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_end_di" bpmnElement="c2r_end" bioc:stroke="#B33131" bioc:fill="#FBE9E9" color:background-color="#FBE9E9" color:border-color="#B33131"><dc:Bounds x="1684" y="267" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1647" y="307" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="c2r_note_sla_di" bpmnElement="c2r_note_sla" bioc:stroke="#8A96A8" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#8A96A8"><dc:Bounds x="317" y="453" width="210" height="54" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Message_Pool_c2r_customer_c2r_start_di" bpmnElement="Message_Pool_c2r_customer_c2r_start"><di:waypoint x="250" y="124" /><di:waypoint x="250" y="267" /><bpmndi:BPMNLabel><dc:Bounds x="255" y="188" width="132" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_start_c2r_create_di" bpmnElement="Flow_c2r_start_c2r_create"><di:waypoint x="268" y="285" /><di:waypoint x="332" y="285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_create_c2r_respond_di" bpmnElement="Flow_c2r_create_c2r_respond"><di:waypoint x="432" y="285" /><di:waypoint x="464" y="285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_c2r_respond_Pool_c2r_customer_di" bpmnElement="Message_c2r_respond_Pool_c2r_customer"><di:waypoint x="514" y="245" /><di:waypoint x="514" y="124" /><bpmndi:BPMNLabel><dc:Bounds x="519" y="178" width="92" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_respond_c2r_gw_type_di" bpmnElement="Flow_c2r_respond_c2r_gw_type"><di:waypoint x="564" y="285" /><di:waypoint x="621" y="285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_gw_type_c2r_request_di" bpmnElement="Flow_c2r_gw_type_c2r_request"><di:waypoint x="646" y="260" /><di:waypoint x="646" y="205" /><di:waypoint x="728" y="205" /><bpmndi:BPMNLabel><dc:Bounds x="594" y="189" width="46" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_gw_type_c2r_check_di" bpmnElement="Flow_c2r_gw_type_c2r_check"><di:waypoint x="646" y="310" /><di:waypoint x="646" y="480" /><di:waypoint x="728" y="480" /><bpmndi:BPMNLabel><dc:Bounds x="548" y="464" width="92" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_gw_type_c2r_inspect_di" bpmnElement="Flow_c2r_gw_type_c2r_inspect"><di:waypoint x="646" y="310" /><di:waypoint x="646" y="620" /><di:waypoint x="728" y="620" /><bpmndi:BPMNLabel><dc:Bounds x="528" y="604" width="112" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_gw_type_c2r_review_di" bpmnElement="Flow_c2r_gw_type_c2r_review"><di:waypoint x="646" y="310" /><di:waypoint x="646" y="840" /><di:waypoint x="728" y="840" /><bpmndi:BPMNLabel><dc:Bounds x="594" y="824" width="46" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_check_c2r_merge_claim_di" bpmnElement="Flow_c2r_check_c2r_merge_claim"><di:waypoint x="828" y="480" /><di:waypoint x="910" y="480" /><di:waypoint x="910" y="310" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_inspect_c2r_merge_claim_di" bpmnElement="Flow_c2r_inspect_c2r_merge_claim"><di:waypoint x="828" y="620" /><di:waypoint x="910" y="620" /><di:waypoint x="910" y="310" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_review_c2r_merge_claim_di" bpmnElement="Flow_c2r_review_c2r_merge_claim"><di:waypoint x="828" y="840" /><di:waypoint x="910" y="840" /><di:waypoint x="910" y="310" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_sla_c2r_escalate_di" bpmnElement="Flow_c2r_sla_c2r_escalate"><di:waypoint x="828" y="660" /><di:waypoint x="1002" y="660" /><di:waypoint x="1002" y="682" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_escalate_c2r_escalated_di" bpmnElement="Flow_c2r_escalate_c2r_escalated"><di:waypoint x="1052" y="722" /><di:waypoint x="1116" y="722" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_merge_claim_c2r_gw_upheld_di" bpmnElement="Flow_c2r_merge_claim_c2r_gw_upheld"><di:waypoint x="935" y="285" /><di:waypoint x="1017" y="285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_gw_upheld_c2r_credit_di" bpmnElement="Flow_c2r_gw_upheld_c2r_credit"><di:waypoint x="1042" y="310" /><di:waypoint x="1042" y="840" /><di:waypoint x="1124" y="840" /><bpmndi:BPMNLabel><dc:Bounds x="1006" y="824" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_gw_upheld_c2r_explain_di" bpmnElement="Flow_c2r_gw_upheld_c2r_explain"><di:waypoint x="1067" y="285" /><di:waypoint x="1124" y="285" /><bpmndi:BPMNLabel><dc:Bounds x="1073" y="268" width="30" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_credit_c2r_merge_out_di" bpmnElement="Flow_c2r_credit_c2r_merge_out"><di:waypoint x="1224" y="840" /><di:waypoint x="1306" y="840" /><di:waypoint x="1306" y="310" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_explain_c2r_merge_out_di" bpmnElement="Flow_c2r_explain_c2r_merge_out"><di:waypoint x="1224" y="285" /><di:waypoint x="1281" y="285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_request_c2r_merge_out_di" bpmnElement="Flow_c2r_request_c2r_merge_out"><di:waypoint x="828" y="205" /><di:waypoint x="1306" y="205" /><di:waypoint x="1306" y="260" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_merge_out_c2r_resolve_di" bpmnElement="Flow_c2r_merge_out_c2r_resolve"><di:waypoint x="1331" y="285" /><di:waypoint x="1388" y="285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_resolve_c2r_survey_di" bpmnElement="Flow_c2r_resolve_c2r_survey"><di:waypoint x="1488" y="285" /><di:waypoint x="1520" y="285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_c2r_survey_Pool_c2r_customer_di" bpmnElement="Message_c2r_survey_Pool_c2r_customer"><di:waypoint x="1570" y="245" /><di:waypoint x="1570" y="124" /><bpmndi:BPMNLabel><dc:Bounds x="1575" y="178" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2r_survey_c2r_end_di" bpmnElement="Flow_c2r_survey_c2r_end"><di:waypoint x="1620" y="285" /><di:waypoint x="1684" y="285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_c2r_note_sla_di" bpmnElement="Association_c2r_note_sla"><di:waypoint x="422" y="453" /><di:waypoint x="382" y="325" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

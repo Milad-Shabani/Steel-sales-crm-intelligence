@@ -5,13 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "steel-crm"
 version = "1.0.0"
-description = "Marketing, sales and CRM analytics for a steel trading company, built on a Microsoft Dynamics 365 Sales (Dataverse) export: option-set decoding, data-quality checks, a star schema, campaign ROI, a win-probability model and an interactive dashboard."
+description = "Marketing, sales, CRM and operations analytics for a steel trading company, built on a Microsoft Dynamics 365 (Dataverse) export: option-set decoding, data-quality checks, a star schema, campaign ROI, a win-probability model, delivery and service measures, BPMN process models and an interactive dashboard."
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Milad Shabani" }]
 dependencies = [
-    "pandas>=2.0",
+    "pandas>=2.2",
     "numpy>=1.24",
     "scikit-learn>=1.3",
     "tzdata>=2023.3",

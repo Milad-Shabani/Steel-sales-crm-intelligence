@@ -5,7 +5,9 @@ cares about: keys that are unique, lookups that point at real records,
 option-set codes that have a label, and business rules that the sales
 process implies (a won deal has a close date, a value and a sales order;
 a qualified lead points at the opportunity it became; an order line's
-amount adds up). Errors stop the pipeline; warnings are reported.
+amount adds up; a shipment is loaded before it is dispatched and delivered;
+a resolved case has a resolution). Errors stop the pipeline; warnings are
+reported.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ PRIMARY_KEYS = {
     "campaign": "campaignid", "campaignresponse": "activityid", "lead": "leadid",
     "opportunity": "opportunityid", "quote": "quoteid", "salesorder": "salesorderid",
     "salesorderdetail": "salesorderdetailid", "invoice": "invoiceid", "activitypointer": "activityid",
+    "ahn_shipment": "ahn_shipmentid", "incident": "incidentid", "incidentresolution": "activityid",
 }
 
 # child table, lookup column, parent table, may be empty
@@ -50,6 +53,13 @@ FOREIGN_KEYS = [
     ("invoice", "salesorderid", "salesorder", False),
     ("invoice", "customerid", "account", False),
     ("ahn_pipelinesnapshot", "ahn_opportunityid", "opportunity", False),
+    ("ahn_shipment", "ahn_salesorderid", "salesorder", False),
+    ("ahn_shipment", "ahn_customerid", "account", False),
+    ("incident", "customerid", "account", False),
+    ("incident", "ahn_salesorderid", "salesorder", True),
+    ("incident", "ahn_shipmentid", "ahn_shipment", True),
+    ("incident", "ownerid", "systemuser", False),
+    ("incidentresolution", "incidentid", "incident", False),
 ]
 
 REGARDING = {"lead": "lead", "opportunity": "opportunity", "account": "account"}
@@ -125,6 +135,34 @@ def run_checks(export: DataverseExport) -> pd.DataFrame:
     inv = t["invoice"]
     paid = inv[inv["statecode"] == 2]
     out.append(_row("paid invoice has a payment date", "invoice", paid["ahn_paidon"].isna().sum(), len(paid)))
+
+    # delivery: one shipment per order, steps in order, the delivered load weighed and signed for
+    sh = t["ahn_shipment"]
+    per_order = sh["ahn_salesorderid"].value_counts().reindex(so.index, fill_value=0)
+    out.append(_row("every order has one shipment", "salesorder", (per_order != 1).sum(), len(so)))
+    steps = ["ahn_stockreadyon", "ahn_loadedon", "ahn_dispatchedon", "ahn_deliveredon"]
+    backwards = sum((sh[b] < sh[a]).sum() for a, b in zip(steps, steps[1:]))
+    submitted = sh["ahn_salesorderid"].map(so["submitdate"])
+    backwards += (sh["ahn_stockreadyon"] < submitted).sum()
+    out.append(_row("shipment steps in order (ready, loaded, dispatched, delivered)", "ahn_shipment",
+                    backwards, len(sh)))
+    done = sh[sh["ahn_deliveredon"].notna()]
+    out.append(_row("delivered load has a weighbridge weight", "ahn_shipment",
+                    done["ahn_loadedtons"].isna().sum(), len(done)))
+    fulfilled = done["ahn_salesorderid"].map(so["datefulfilled"])
+    out.append(_row("order fulfilled when its shipment is delivered", "salesorder",
+                    (fulfilled != done["ahn_deliveredon"]).sum(), len(done)))
+    out.append(_row("delivered load has a signed proof of delivery", "ahn_shipment",
+                    (done["ahn_podreceived"] != True).sum(), len(done), "warning"))  # noqa: E712
+
+    # customer service: a resolved case has its resolution, and no case predates its order
+    case = t["incident"]
+    resolved = case[case["statecode"] == 1]
+    out.append(_row("resolved case has a resolution", "incident",
+                    (~resolved["incidentid"].isin(set(t["incidentresolution"]["incidentid"]))).sum(), len(resolved)))
+    linked = case[case["ahn_salesorderid"].notna()]
+    out.append(_row("case not created before its order", "incident",
+                    (linked["createdon"] < linked["ahn_salesorderid"].map(so["submitdate"])).sum(), len(linked)))
     return pd.DataFrame(out)
 
 

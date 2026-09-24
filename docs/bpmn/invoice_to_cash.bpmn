@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" id="Definitions_invoice_to_cash" targetNamespace="https://github.com/Milad-Shabani/Steel-sales-crm-intelligence" exporter="steel_crm.processes" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_invoice_to_cash">
+    <bpmn:documentation>Finance: from the invoice to the payment, with the reminder and the credit hold.</bpmn:documentation>
+    <bpmn:participant id="Pool_i2c_customer" name="Customer" />
+    <bpmn:participant id="Pool_i2c_ahanyar" name="Ahanyar Steel Trading Co." processRef="Process_invoice_to_cash" />
+    <bpmn:messageFlow id="Message_i2c_send_Pool_i2c_customer" name="Invoice" sourceRef="i2c_send" targetRef="Pool_i2c_customer" />
+    <bpmn:messageFlow id="Message_Pool_i2c_customer_i2c_paid" name="Payment" sourceRef="Pool_i2c_customer" targetRef="i2c_paid" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_invoice_to_cash" name="Invoice to cash" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_invoice_to_cash">
+      <bpmn:lane id="Lane_i2c_finance" name="Finance: receivables">
+        <bpmn:flowNodeRef>i2c_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_paid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_due</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_match</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_end</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_i2c_rep" name="Sales rep">
+        <bpmn:flowNodeRef>i2c_call</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_wait2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_paid2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_overdue</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_i2c_credit" name="Credit control">
+        <bpmn:flowNodeRef>i2c_hold</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_escalate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>i2c_paid3</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="i2c_start" name="Order delivered">
+      <bpmn:outgoing>Flow_i2c_start_i2c_send</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sendTask id="i2c_send" name="Send the invoice with its payment terms">
+      <bpmn:documentation>invoice.duedate from paymenttermscode: cash in advance, net 30, 60 or 90</bpmn:documentation>
+      <bpmn:incoming>Flow_i2c_start_i2c_send</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_send_i2c_wait</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:eventBasedGateway id="i2c_wait" name="">
+      <bpmn:incoming>Flow_i2c_send_i2c_wait</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_wait_i2c_paid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_i2c_wait_i2c_due</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="i2c_paid" name="Payment received">
+      <bpmn:documentation>invoice.ahn_paidon on or before the due date</bpmn:documentation>
+      <bpmn:incoming>Flow_i2c_wait_i2c_paid</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_paid_i2c_merge</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_i2c_paid" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="i2c_due" name="Due date passes unpaid">
+      <bpmn:documentation>invoice.duedate</bpmn:documentation>
+      <bpmn:incoming>Flow_i2c_wait_i2c_due</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_due_i2c_call</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerDef_i2c_due">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P0D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="i2c_call" name="Call the customer about payment">
+      <bpmn:documentation>phonecall activity by the account owner</bpmn:documentation>
+      <bpmn:incoming>Flow_i2c_due_i2c_call</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_call_i2c_wait2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:eventBasedGateway id="i2c_wait2" name="">
+      <bpmn:incoming>Flow_i2c_call_i2c_wait2</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_wait2_i2c_paid2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_i2c_wait2_i2c_overdue</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="i2c_paid2" name="Payment received">
+      <bpmn:documentation>invoice.ahn_paidon up to 30 days late</bpmn:documentation>
+      <bpmn:incoming>Flow_i2c_wait2_i2c_paid2</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_paid2_i2c_merge</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_i2c_paid2" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="i2c_overdue" name="30 days overdue">
+      <bpmn:incoming>Flow_i2c_wait2_i2c_overdue</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_overdue_i2c_hold</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerDef_i2c_overdue">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P30D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="i2c_hold" name="Put the account on credit hold">
+      <bpmn:documentation>no new orders on credit until the account is clear</bpmn:documentation>
+      <bpmn:incoming>Flow_i2c_overdue_i2c_hold</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_hold_i2c_escalate</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="i2c_escalate" name="Escalate: guarantee cheque or legal">
+      <bpmn:incoming>Flow_i2c_hold_i2c_escalate</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_escalate_i2c_paid3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="i2c_paid3" name="Payment received">
+      <bpmn:documentation>invoice.ahn_paidon more than 30 days late</bpmn:documentation>
+      <bpmn:incoming>Flow_i2c_escalate_i2c_paid3</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_paid3_i2c_merge</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageDef_i2c_paid3" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="i2c_merge" name="">
+      <bpmn:incoming>Flow_i2c_paid_i2c_merge</bpmn:incoming>
+      <bpmn:incoming>Flow_i2c_paid2_i2c_merge</bpmn:incoming>
+      <bpmn:incoming>Flow_i2c_paid3_i2c_merge</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_merge_i2c_match</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="i2c_match" name="Match the payment to the invoice">
+      <bpmn:documentation>invoice statecode Paid, ahn_paidon</bpmn:documentation>
+      <bpmn:incoming>Flow_i2c_merge_i2c_match</bpmn:incoming>
+      <bpmn:outgoing>Flow_i2c_match_i2c_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="i2c_end" name="Invoice paid">
+      <bpmn:incoming>Flow_i2c_match_i2c_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_i2c_start_i2c_send" sourceRef="i2c_start" targetRef="i2c_send" />
+    <bpmn:sequenceFlow id="Flow_i2c_send_i2c_wait" sourceRef="i2c_send" targetRef="i2c_wait" />
+    <bpmn:sequenceFlow id="Flow_i2c_wait_i2c_paid" sourceRef="i2c_wait" targetRef="i2c_paid" />
+    <bpmn:sequenceFlow id="Flow_i2c_wait_i2c_due" sourceRef="i2c_wait" targetRef="i2c_due" />
+    <bpmn:sequenceFlow id="Flow_i2c_due_i2c_call" sourceRef="i2c_due" targetRef="i2c_call" />
+    <bpmn:sequenceFlow id="Flow_i2c_call_i2c_wait2" sourceRef="i2c_call" targetRef="i2c_wait2" />
+    <bpmn:sequenceFlow id="Flow_i2c_wait2_i2c_paid2" sourceRef="i2c_wait2" targetRef="i2c_paid2" />
+    <bpmn:sequenceFlow id="Flow_i2c_wait2_i2c_overdue" sourceRef="i2c_wait2" targetRef="i2c_overdue" />
+    <bpmn:sequenceFlow id="Flow_i2c_overdue_i2c_hold" sourceRef="i2c_overdue" targetRef="i2c_hold" />
+    <bpmn:sequenceFlow id="Flow_i2c_hold_i2c_escalate" sourceRef="i2c_hold" targetRef="i2c_escalate" />
+    <bpmn:sequenceFlow id="Flow_i2c_escalate_i2c_paid3" sourceRef="i2c_escalate" targetRef="i2c_paid3" />
+    <bpmn:sequenceFlow id="Flow_i2c_paid_i2c_merge" sourceRef="i2c_paid" targetRef="i2c_merge" />
+    <bpmn:sequenceFlow id="Flow_i2c_paid2_i2c_merge" sourceRef="i2c_paid2" targetRef="i2c_merge" />
+    <bpmn:sequenceFlow id="Flow_i2c_paid3_i2c_merge" sourceRef="i2c_paid3" targetRef="i2c_merge" />
+    <bpmn:sequenceFlow id="Flow_i2c_merge_i2c_match" sourceRef="i2c_merge" targetRef="i2c_match" />
+    <bpmn:sequenceFlow id="Flow_i2c_match_i2c_end" sourceRef="i2c_match" targetRef="i2c_end" />
+    <bpmn:textAnnotation id="i2c_note_terms"><bpmn:text>Cash-in-advance customers pay before the truck is loaded; the others get 30, 60 or 90 days</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_i2c_note_terms" associationDirection="None" sourceRef="i2c_note_terms" targetRef="i2c_send" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_invoice_to_cash">
+    <bpmndi:BPMNPlane id="Plane_invoice_to_cash" bpmnElement="Collaboration_invoice_to_cash">
+      <bpmndi:BPMNShape id="Pool_i2c_customer_di" bpmnElement="Pool_i2c_customer" isHorizontal="true"><dc:Bounds x="120" y="60" width="1824" height="64" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Pool_i2c_ahanyar_di" bpmnElement="Pool_i2c_ahanyar" isHorizontal="true"><dc:Bounds x="120" y="160" width="1824" height="610" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_i2c_finance_di" bpmnElement="Lane_i2c_finance" isHorizontal="true"><dc:Bounds x="150" y="160" width="1794" height="240" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_i2c_rep_di" bpmnElement="Lane_i2c_rep" isHorizontal="true"><dc:Bounds x="150" y="400" width="1794" height="220" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_i2c_credit_di" bpmnElement="Lane_i2c_credit" isHorizontal="true"><dc:Bounds x="150" y="620" width="1794" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_start_di" bpmnElement="i2c_start" bioc:stroke="#0E7C69" bioc:fill="#E3F4EF" color:background-color="#E3F4EF" color:border-color="#0E7C69"><dc:Bounds x="232" y="262" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="195" y="302" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_send_di" bpmnElement="i2c_send" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="332" y="240" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_wait_di" bpmnElement="i2c_wait" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="489" y="255" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_paid_di" bpmnElement="i2c_paid" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="628" y="182" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="591" y="222" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_due_di" bpmnElement="i2c_due" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="628" y="342" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="670" y="346" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_call_di" bpmnElement="i2c_call" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="728" y="470" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_wait2_di" bpmnElement="i2c_wait2" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="885" y="485" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_paid2_di" bpmnElement="i2c_paid2" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="1024" y="432" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="987" y="472" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_overdue_di" bpmnElement="i2c_overdue" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="1024" y="552" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1066" y="563" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_hold_di" bpmnElement="i2c_hold" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1124" y="655" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_escalate_di" bpmnElement="i2c_escalate" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1256" y="655" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_paid3_di" bpmnElement="i2c_paid3" bioc:stroke="#134074" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#134074"><dc:Bounds x="1420" y="677" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1383" y="717" width="110" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_merge_di" bpmnElement="i2c_merge" isMarkerVisible="true" bioc:stroke="#C0510F" bioc:fill="#FFF4EC" color:background-color="#FFF4EC" color:border-color="#C0510F"><dc:Bounds x="1545" y="255" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_match_di" bpmnElement="i2c_match" bioc:stroke="#0B2545" bioc:fill="#EEF3F9" color:background-color="#EEF3F9" color:border-color="#0B2545"><dc:Bounds x="1652" y="240" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_end_di" bpmnElement="i2c_end" bioc:stroke="#B33131" bioc:fill="#FBE9E9" color:background-color="#FBE9E9" color:border-color="#B33131"><dc:Bounds x="1816" y="262" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1779" y="302" width="110" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="i2c_note_terms_di" bpmnElement="i2c_note_terms" bioc:stroke="#8A96A8" bioc:fill="#FFFFFF" color:background-color="#FFFFFF" color:border-color="#8A96A8"><dc:Bounds x="308" y="476" width="200" height="68" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_i2c_start_i2c_send_di" bpmnElement="Flow_i2c_start_i2c_send"><di:waypoint x="268" y="280" /><di:waypoint x="332" y="280" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_i2c_send_Pool_i2c_customer_di" bpmnElement="Message_i2c_send_Pool_i2c_customer"><di:waypoint x="382" y="240" /><di:waypoint x="382" y="124" /><bpmndi:BPMNLabel><dc:Bounds x="387" y="175" width="46" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_send_i2c_wait_di" bpmnElement="Flow_i2c_send_i2c_wait"><di:waypoint x="432" y="280" /><di:waypoint x="489" y="280" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_wait_i2c_paid_di" bpmnElement="Flow_i2c_wait_i2c_paid"><di:waypoint x="514" y="255" /><di:waypoint x="514" y="200" /><di:waypoint x="628" y="200" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_wait_i2c_due_di" bpmnElement="Flow_i2c_wait_i2c_due"><di:waypoint x="514" y="305" /><di:waypoint x="514" y="360" /><di:waypoint x="628" y="360" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Message_Pool_i2c_customer_i2c_paid_di" bpmnElement="Message_Pool_i2c_customer_i2c_paid"><di:waypoint x="646" y="124" /><di:waypoint x="646" y="182" /><bpmndi:BPMNLabel><dc:Bounds x="651" y="146" width="46" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_due_i2c_call_di" bpmnElement="Flow_i2c_due_i2c_call"><di:waypoint x="646" y="378" /><di:waypoint x="646" y="510" /><di:waypoint x="728" y="510" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_call_i2c_wait2_di" bpmnElement="Flow_i2c_call_i2c_wait2"><di:waypoint x="828" y="510" /><di:waypoint x="885" y="510" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_wait2_i2c_paid2_di" bpmnElement="Flow_i2c_wait2_i2c_paid2"><di:waypoint x="910" y="485" /><di:waypoint x="910" y="450" /><di:waypoint x="1024" y="450" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_wait2_i2c_overdue_di" bpmnElement="Flow_i2c_wait2_i2c_overdue"><di:waypoint x="910" y="535" /><di:waypoint x="910" y="570" /><di:waypoint x="1024" y="570" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_overdue_i2c_hold_di" bpmnElement="Flow_i2c_overdue_i2c_hold"><di:waypoint x="1042" y="588" /><di:waypoint x="1042" y="695" /><di:waypoint x="1124" y="695" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_hold_i2c_escalate_di" bpmnElement="Flow_i2c_hold_i2c_escalate"><di:waypoint x="1224" y="695" /><di:waypoint x="1256" y="695" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_escalate_i2c_paid3_di" bpmnElement="Flow_i2c_escalate_i2c_paid3"><di:waypoint x="1356" y="695" /><di:waypoint x="1420" y="695" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_paid_i2c_merge_di" bpmnElement="Flow_i2c_paid_i2c_merge"><di:waypoint x="664" y="200" /><di:waypoint x="1570" y="200" /><di:waypoint x="1570" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_paid2_i2c_merge_di" bpmnElement="Flow_i2c_paid2_i2c_merge"><di:waypoint x="1042" y="432" /><di:waypoint x="1042" y="280" /><di:waypoint x="1545" y="280" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_paid3_i2c_merge_di" bpmnElement="Flow_i2c_paid3_i2c_merge"><di:waypoint x="1456" y="695" /><di:waypoint x="1570" y="695" /><di:waypoint x="1570" y="305" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_merge_i2c_match_di" bpmnElement="Flow_i2c_merge_i2c_match"><di:waypoint x="1595" y="280" /><di:waypoint x="1652" y="280" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_i2c_match_i2c_end_di" bpmnElement="Flow_i2c_match_i2c_end"><di:waypoint x="1752" y="280" /><di:waypoint x="1816" y="280" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_i2c_note_terms_di" bpmnElement="Association_i2c_note_terms"><di:waypoint x="408" y="476" /><di:waypoint x="382" y="320" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -186,7 +186,10 @@
     .kpi .num{font-size:22px;}
     .card{padding:14px 12px 10px;}
     .chart-box, .chart-box.tall{height:270px;}
+    .chart-box.rows{height:380px;}
     .table-scroll td{white-space:nowrap;}
+    .table-scroll th:first-child, .table-scroll td:first-child{position:sticky; left:0; z-index:1; box-shadow:1px 0 0 var(--line);}
+    .table-scroll td:first-child{background:#fff; white-space:normal; min-width:140px; max-width:170px;}
   }
   @media print{ nav.subnav{display:none;} .card, .kpi{box-shadow:none; break-inside:avoid;} }
 </style>
@@ -285,12 +288,12 @@
       <div class="card">
         <h3>Lead quality by source</h3>
         <p class="take" id="takeLeadSrc"></p>
-        <div class="chart-box"><canvas id="leadSrcChart"></canvas></div>
+        <div class="chart-box rows"><canvas id="leadSrcChart"></canvas></div>
       </div>
       <div class="card">
         <h3>Return on marketing spend, by channel</h3>
         <p class="take" id="takeRoi"></p>
-        <div class="chart-box"><canvas id="roiChart"></canvas></div>
+        <div class="chart-box rows"><canvas id="roiChart"></canvas></div>
       </div>
       <div class="card full">
         <h3>Channel scorecard</h3>
@@ -360,7 +363,7 @@
       <div class="card">
         <h3>Win rate by customer industry</h3>
         <p class="take" id="takeInd"></p>
-        <div class="chart-box"><canvas id="industryChart"></canvas></div>
+        <div class="chart-box rows"><canvas id="industryChart"></canvas></div>
       </div>
       <div class="card">
         <h3>Win rate against each competitor</h3>
@@ -392,7 +395,7 @@
       <div class="card">
         <h3>Receivables aging by industry</h3>
         <p class="take" id="takeAging"></p>
-        <div class="chart-box"><canvas id="agingChart"></canvas></div>
+        <div class="chart-box rows"><canvas id="agingChart"></canvas></div>
       </div>
       <div class="card">
         <h3>Revenue by province, last 12 months</h3>
@@ -559,13 +562,26 @@ Chart.defaults.plugins.legend.labels.boxHeight = 10;
 const legend = {position:'top', align:'end'};
 const g = {color: C.grid};
 const pctAxis = {grid: g, ticks: {callback: v => v + '%'}, beginAtZero: true};
+// horizontal bars: on a narrow chart, wrap long labels onto two lines rather than let the axis clip them
+const wrapLabel = (s, n) => {
+  const lines = [];
+  for (const w of String(s).split(' ')) {
+    const cur = lines[lines.length - 1];
+    if (cur && (cur + ' ' + w).length <= n) lines[lines.length - 1] = cur + ' ' + w; else lines.push(w);
+  }
+  return lines.length > 1 ? lines : s;
+};
+const catAxis = (n = 18) => ({grid:{display:false}, ticks:{autoSkip: false, maxRotation: 0, callback(v) {
+  const l = this.getLabelForValue(v);
+  return Array.isArray(l) || this.chart.width >= 520 ? l : wrapLabel(l, n);
+}}});
 
 // monthly revenue, tons, price index
 const labels = M.map(m => month(m.month));
 new Chart(document.getElementById('monthlyChart'), {
   data: {labels, datasets: [
     {type:'bar', label:'Revenue', data: M.map(m => m.revenue / 1e12), backgroundColor: C.steel, borderRadius: 4, yAxisID:'y', order: 3},
-    {type:'line', label:'Tons (thousand)', data: M.map(m => m.tons / 1e3), borderColor: C.amber, backgroundColor: C.amber, yAxisID:'y2', tension:.3, pointRadius: 2, borderWidth: 2.5, order: 2},
+    {type:'line', label:'Tons (thousand)', data: M.map(m => m.tons / 1e3), borderColor: C.teal, backgroundColor: C.teal, yAxisID:'y2', tension:.3, pointRadius: 2, borderWidth: 2.5, order: 2},
     {type:'line', label:'Price index', data: M.map(m => m.price_index), borderColor: C.orange, backgroundColor: C.orange, yAxisID:'y3', tension:.2, pointRadius: 0, borderWidth: 2.5, borderDash:[6, 4], order: 1},
   ]},
   options: {interaction:{mode:'index', intersect:false},
@@ -597,7 +613,7 @@ new Chart(document.getElementById('leadSrcChart'), {
     {label:'Won', data: LS.map(l => l.lead_to_win * 100), backgroundColor: C.steel, borderRadius: 4},
   ]},
   options:{indexAxis:'y', plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + c.parsed.x.toFixed(0) + '% of ' + fmt(LS[c.dataIndex].leads) + ' leads'}}},
-    scales:{x:{...pctAxis, max: 100}, y:{grid:{display:false}}}}
+    scales:{x:{...pctAxis, max: 100}, y: catAxis()}}
 });
 const bestSrc = LS[0], worstSrc = LS[LS.length - 1];
 document.getElementById('takeLeadSrc').innerHTML = `Share of each source's leads that qualify, and that end in a won deal. <b>${esc(bestSrc.channel)}</b> leads win ${pct(bestSrc.lead_to_win)}; <b>${esc(worstSrc.channel)}</b> only ${pct(worstSrc.lead_to_win)}.`;
@@ -611,20 +627,22 @@ new Chart(document.getElementById('roiChart'), {
     {label:'Customer-lifetime return', data: ch.map(c => c.roi + 1), backgroundColor: C.steel, borderRadius: 4},
   ]},
   options:{indexAxis:'y', plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + c.parsed.x.toFixed(1) + 'x the spend'}}},
-    scales:{x:{type:'logarithmic', grid: g, ticks:{callback: v => [0.5, 1, 2, 5, 10, 20, 50].includes(v) ? v + 'x' : ''}}, y:{grid:{display:false}}}}
+    scales:{x:{type:'logarithmic', grid: g, ticks:{callback: v => [0.5, 1, 2, 5, 10, 20, 50].includes(v) ? v + 'x' : ''}}, y: catAxis()}}
 });
 const worstFirst = ch.reduce((a, b) => a.first_deal_roi < b.first_deal_roi ? a : b);
 document.getElementById('takeRoi').innerHTML = `Gross margin earned per rial spent (log scale; 1x = break-even). <b>${esc(ch[0].channel)}</b> leads on lifetime return; <b>${esc(worstFirst.channel)}</b> ${worstFirst.first_deal_roi < 0 ? 'loses money on first deals' : 'returns least on first deals'}.`;
 
 // quote speed
-const QS = D.quote_speed;
+const QS = D.quote_speed.filter(q => q.bucket !== 'Never quoted');
+const neverQ = D.quote_speed.find(q => q.bucket === 'Never quoted');
 new Chart(document.getElementById('speedChart'), {
   type:'bar',
   data:{labels: QS.map(q => q.bucket), datasets:[{data: QS.map(q => q.win_rate * 100), backgroundColor: QS.map((q, i) => [C.teal, C.blue, C.amber, C.orange, C.red][i]), borderRadius: 6, maxBarThickness: 70}]},
   options:{plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => c.parsed.y.toFixed(0) + '% won of ' + fmt(QS[c.dataIndex].deals) + ' deals'}}},
-    scales:{x:{grid:{display:false}}, y:{...pctAxis, max: 100}}}
+    scales:{x: catAxis(9), y:{...pctAxis, max: 100}}}
 });
-document.getElementById('takeSpeed').innerHTML = `Win rate falls from <b>${pct(QS[0].win_rate)}</b> for quotes sent within 4 hours to <b>${pct(QS[3].win_rate)}</b> after 3 days. Steel quotes expire in days, and prices move daily.`;
+document.getElementById('takeSpeed').innerHTML = `Win rate falls from <b>${pct(QS[0].win_rate)}</b> for quotes sent within 4 hours to <b>${pct(QS[3].win_rate)}</b> after 3 days. Steel quotes expire in days, and prices move daily.` +
+  (neverQ ? ` ${fmt(neverQ.deals)} deals closed without ever getting a quote; ${neverQ.win_rate ? pct(neverQ.win_rate) : 'none'} of them were won.` : '');
 
 // calibration
 const CAL = D.calibration.filter(c => c.deals_model > 0 || c.deals_crm > 0);
@@ -636,22 +654,25 @@ new Chart(document.getElementById('calChart'), {
     {type:'line', label:'Promised (bin midpoint)', data: CAL.map(c => {const [a, b] = c.bin.replace('%', '').split('-').map(Number); return (a + b) / 2;}), borderColor: C.orange, backgroundColor: C.orange, borderDash:[5, 4], pointRadius: 3, borderWidth: 2},
   ]},
   options:{interaction:{mode:'index', intersect:false}, plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + (c.parsed.y == null ? '—' : c.parsed.y.toFixed(0) + '%')}}},
-    scales:{x:{grid:{display:false}, title:{display:true, text:'Predicted win probability'}}, y:{...pctAxis, max: 100}}}
+    scales:{x:{...catAxis(), title:{display:true, text:'Predicted win probability'}}, y:{...pctAxis, max: 100}}}
 });
 const top = D.calibration.find(c => c.bin === '80-100%');
-document.getElementById('takeCal').innerHTML = `Deals the CRM put at 80%+ closed <b>${pct(top.actual_crm)}</b> of the time; the model's 80%+ deals closed ${pct(top.actual_model)}. Bins with fewer than 20 deals are left out.`;
+const noCrm = CAL.filter(c => c.deals_crm === 0).map(c => c.bin), thin = CAL.filter(c => c.deals_crm > 0 && c.deals_crm < 20 || c.deals_model > 0 && c.deals_model < 20);
+document.getElementById('takeCal').innerHTML = `Deals the CRM put at 80%+ closed <b>${pct(top.actual_crm)}</b> of the time; the model's 80%+ deals closed ${pct(top.actual_model)}.` +
+  (noCrm.length ? ` Reps never enter a probability in the ${noCrm.join(', ')} band, so the CRM has no bar there.` : '') +
+  (thin.length ? ' Bands with fewer than 20 deals are left out.' : '');
 
 // open pipeline by stage
 const ST = D.pipeline_stage;
 new Chart(document.getElementById('stageChart'), {
   type:'bar',
-  data:{labels: ST.map(s => s.stage), datasets:[
+  data:{labels: ST.map(s => [s.stage, s.deals + (s.deals === 1 ? ' deal' : ' deals')]), datasets:[
     {label:'Unweighted', data: ST.map(s => s.value / 1e9), backgroundColor: C.pale, borderRadius: 4},
     {label:'CRM-weighted', data: ST.map(s => s.crm_weighted / 1e9), backgroundColor: C.sky, borderRadius: 4},
     {label:'Model-weighted', data: ST.map(s => s.model_weighted / 1e9), backgroundColor: C.steel, borderRadius: 4},
   ]},
   options:{plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + fmt(c.parsed.y) + 'B IRR'}}},
-    scales:{x:{grid:{display:false}}, y:{grid: g, title:{display:true, text:'B IRR'}}}}
+    scales:{x: catAxis(), y:{grid: g, title:{display:true, text:'B IRR'}}}}
 });
 document.getElementById('takeStage').innerHTML = `${K.open_deals} open deals worth ${irr(K.open_value)}. The CRM weights them to ${irr(K.open_crm_weighted)}, the model to <b>${irr(K.open_model_weighted)}</b>.`;
 
@@ -661,7 +682,7 @@ new Chart(document.getElementById('importanceChart'), {
   type:'bar',
   data:{labels: IMP.map(i => i.feature), datasets:[{data: IMP.map(i => i.importance), backgroundColor: IMP.map((i, k) => k === 0 ? C.orange : C.steel), borderRadius: 4}]},
   options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => 'AUC drop: ' + c.parsed.x.toFixed(3)}}},
-    scales:{x:{grid: g, beginAtZero: true}, y:{grid:{display:false}}}}
+    scales:{x:{grid: g, beginAtZero: true}, y: catAxis()}}
 });
 
 // loss reasons
@@ -670,7 +691,7 @@ new Chart(document.getElementById('lossChart'), {
   type:'bar',
   data:{labels: LR.map(l => l.loss_reason), datasets:[{data: LR.map(l => l.deals), backgroundColor: LR.map(l => l.loss_reason.startsWith('Slow') ? C.orange : l.loss_reason === 'Price' ? C.red : C.sky), borderRadius: 4}]},
   options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => fmt(c.parsed.x) + ' deals (' + pct(LR[c.dataIndex].share) + '), ' + irr(LR[c.dataIndex].lost_value) + ' lost'}}},
-    scales:{x:{grid: g, beginAtZero: true}, y:{grid:{display:false}}}}
+    scales:{x:{grid: g, beginAtZero: true}, y: catAxis()}}
 });
 const slowLoss = LR.find(l => l.loss_reason.startsWith('Slow'));
 document.getElementById('takeLoss').innerHTML = `Competitors and price lead, but <b>${pct(slowLoss.share)}</b> of losses are slow quotes or expired prices, which a faster process can fix.`;
@@ -693,7 +714,7 @@ new Chart(document.getElementById('industryChart'), {
   type:'bar',
   data:{labels: IN.map(i => i.industry.replace(' Project', '').replace(' & Appliance Parts', ' & Appliances')), datasets:[{data: IN.map(i => i.win_rate * 100), backgroundColor: C.blue, borderRadius: 4}]},
   options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => c.parsed.x.toFixed(0) + '% of ' + fmt(IN[c.dataIndex].deals) + ' deals · median ' + IN[c.dataIndex].cycle_days + ' days to close'}}},
-    scales:{x:{...pctAxis, max: 100}, y:{grid:{display:false}}}}
+    scales:{x:{...pctAxis, max: 100}, y: catAxis()}}
 });
 document.getElementById('takeInd').innerHTML = `<b>${esc(IN[0].industry)}</b> converts best (${pct(IN[0].win_rate)}); <b>${esc(IN[IN.length - 1].industry)}</b> least (${pct(IN[IN.length - 1].win_rate)}), with the longest cycles.`;
 
@@ -703,7 +724,7 @@ new Chart(document.getElementById('compChart'), {
   type:'bar',
   data:{labels: CP.map(c => c.competitor), datasets:[{data: CP.map(c => c.win_rate * 100), backgroundColor: CP.map(c => c.competitor === 'No competitor' ? C.teal : c.competitor === 'Mill Direct Sales' ? C.red : C.sky), borderRadius: 4}]},
   options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => c.parsed.x.toFixed(0) + '% won of ' + fmt(CP[c.dataIndex].deals)}}},
-    scales:{x:{...pctAxis, max: 100}, y:{grid:{display:false}}}}
+    scales:{x:{...pctAxis, max: 100}, y: catAxis()}}
 });
 const mill = CP.find(c => c.competitor === 'Mill Direct Sales'), none = CP.find(c => c.competitor === 'No competitor');
 document.getElementById('takeComp').innerHTML = `Uncontested deals close ${pct(none.win_rate)} of the time. The hardest rival is the mills themselves selling direct: <b>${pct(mill.win_rate)}</b>.`;
@@ -715,7 +736,7 @@ new Chart(document.getElementById('agingChart'), {
   type:'bar',
   data:{labels: AG.map(a => a.industry.replace(' Project', '').replace(' & Appliance Parts', ' & Appliances')), datasets: buckets.map((b, i) => ({label: b, data: AG.map(a => a[b] / 1e9), backgroundColor: agColors[i], borderRadius: 2}))},
   options:{indexAxis:'y', plugins:{legend:{position:'top', align:'start', labels:{font:{size:11}}}, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + fmt(c.parsed.x) + 'B IRR'}}},
-    scales:{x:{stacked: true, grid: g, title:{display:true, text:'B IRR'}}, y:{stacked: true, grid:{display:false}}}}
+    scales:{x:{stacked: true, grid: g, title:{display:true, text:'B IRR'}}, y:{...catAxis(), stacked: true}}}
 });
 document.getElementById('takeAging').innerHTML = `<b>${pct(K.overdue_share)}</b> of ${irr(K.open_ar)} open receivables is past due. Public projects pay latest.`;
 
@@ -725,7 +746,7 @@ new Chart(document.getElementById('provChart'), {
   type:'bar',
   data:{labels: PR.map(p => p.province), datasets:[{data: PR.map(p => p.revenue / 1e12), backgroundColor: PR.map((p, i) => i === 0 ? C.orange : C.steel), borderRadius: 4}]},
   options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => c.parsed.x.toFixed(1) + 'T IRR · ' + fmt(PR[c.dataIndex].tons) + ' t · ' + PR[c.dataIndex].customers + ' customers'}}},
-    scales:{x:{grid: g, title:{display:true, text:'T IRR'}}, y:{grid:{display:false}}}}
+    scales:{x:{grid: g, title:{display:true, text:'T IRR'}}, y: catAxis()}}
 });
 document.getElementById('takeProv').innerHTML = `<b>${esc(PR[0].province)}</b> brings ${pct(PR[0].revenue / PR.reduce((s, p) => s + p.revenue, 0))} of revenue from ${PR[0].customers} customers.`;
 }

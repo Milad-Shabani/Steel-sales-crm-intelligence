@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>Ahanyar Steel Trading — Marketing, Sales &amp; CRM Intelligence</title>
+<meta name="description" content="Marketing, sales and CRM analytics for a steel trading company, built on a Microsoft Dynamics 365 Sales (Dataverse) export.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="./chart.umd.min.js"></script>
+<script src="./data.js"></script>
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --panel:#FFFFFF;
+    --panel-2:#F5F7FA;
+    --line:#E4E9F0;
+    --grid:#EEF2F6;
+    --navy:#0B2545;
+    --steel:#134074;
+    --blue:#2F6DB5;
+    --sky:#8DA9C4;
+    --orange:#F26B1D;
+    --orange-soft:#FFF0E6;
+    --amber:#F4A259;
+    --teal:#14A38B;
+    --teal-soft:#E4F6F2;
+    --red:#D64545;
+    --red-soft:#FCE9E9;
+    --text:#14213D;
+    --dim:#4F5D75;
+    --faint:#8A96A8;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(11,37,69,0.05), 0 8px 24px rgba(11,37,69,0.06);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; line-height:1.5;}
+  .topbar{height:6px; background:linear-gradient(90deg, var(--navy), var(--steel) 40%, var(--orange));}
+  .wrap{max-width:1240px; margin:0 auto; padding:0 28px;}
+
+  header{padding:40px 0 26px;}
+  .eyebrow{font-family:'Manrope', sans-serif; font-weight:700; font-size:12px; letter-spacing:.12em; color:var(--orange); text-transform:uppercase;}
+  h1{font-family:'Manrope', sans-serif; font-weight:800; font-size:clamp(28px, 3.8vw, 44px); line-height:1.12; letter-spacing:-.02em; color:var(--navy); margin:10px 0 14px; max-width:900px; text-wrap:balance;}
+  h1 em{font-style:normal; color:var(--orange);}
+  .lede{font-size:15.5px; color:var(--dim); max-width:760px; margin:0;}
+  .lede b{color:var(--text);}
+  .flow{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:18px; font-size:12px; font-weight:600; color:var(--dim);}
+  .flow span.node{background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:5px 12px;}
+  .flow span.node.hot{background:var(--orange-soft); border-color:#FBD3B8; color:#B4480E;}
+  .flow span.arrow{color:var(--faint);}
+
+  nav.subnav{position:sticky; top:0; z-index:40; background:rgba(255,255,255,.95); backdrop-filter:blur(8px); border-bottom:1px solid var(--line);}
+  nav.subnav .wrap{display:flex; gap:2px; overflow-x:auto; scrollbar-width:none;}
+  nav.subnav .wrap::-webkit-scrollbar{display:none;}
+  nav.subnav a{font-family:'Manrope', sans-serif; font-weight:700; font-size:13px; color:var(--dim); text-decoration:none; padding:13px 12px 11px; border-bottom:2px solid transparent; white-space:nowrap;}
+  nav.subnav a:hover{color:var(--navy);}
+  nav.subnav a.active{color:var(--orange); border-bottom-color:var(--orange);}
+
+  main{padding:28px 0 20px;}
+  section{scroll-margin-top:64px; margin-bottom:54px;}
+  .section-head{display:flex; justify-content:space-between; align-items:flex-end; gap:18px; flex-wrap:wrap; margin-bottom:16px;}
+  h2{font-family:'Manrope', sans-serif; font-weight:800; font-size:23px; letter-spacing:-.01em; color:var(--navy); margin:0;}
+  h2 small{display:block; font-family:'Inter', sans-serif; font-weight:500; font-size:13px; color:var(--faint); letter-spacing:0; margin-top:3px;}
+  .section-note{font-size:13px; color:var(--faint); max-width:470px; text-align:right;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px;}
+  .kpi{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px 12px; box-shadow:var(--shadow); min-width:0; position:relative; overflow:hidden;}
+  .kpi::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--steel);}
+  .kpi.hot::before{background:var(--orange);}
+  .kpi.good::before{background:var(--teal);}
+  .kpi.risk::before{background:var(--red);}
+  .kpi .label{font-size:12.5px; font-weight:600; color:var(--dim);}
+  .kpi .num{font-family:'Manrope', sans-serif; font-weight:800; font-size:28px; letter-spacing:-.02em; color:var(--navy); margin-top:6px; line-height:1.1; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .kpi .sub{font-size:12px; color:var(--faint); margin-top:5px;}
+  .kpi svg.spark{display:block; width:100%; height:30px; margin-top:8px;}
+  .delta{font-family:'Inter', sans-serif; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:999px; letter-spacing:0;}
+  .delta.up{background:var(--teal-soft); color:#0E7C69;}
+  .delta.down{background:var(--red-soft); color:#B33131;}
+  .kpi-note{font-size:12px; color:var(--faint); margin:10px 2px 0;}
+
+  .insights{margin-top:22px; background:linear-gradient(180deg, #FAFBFD, #FFFFFF); border:1px solid var(--line); border-radius:var(--radius); padding:18px 22px; box-shadow:var(--shadow);}
+  .insights h3{font-family:'Manrope', sans-serif; font-weight:800; font-size:15px; color:var(--navy); margin:0 0 10px;}
+  .insights ol{margin:0; padding-left:20px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px 28px;}
+  .insights li{font-size:13.5px; color:var(--dim); line-height:1.6; padding-left:4px;}
+  .insights li::marker{color:var(--orange); font-weight:700;}
+  .insights li b{color:var(--text);}
+
+  .grid{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px;}
+  .grid.wide-left{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);}
+  .full{grid-column:1 / -1;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px 14px; box-shadow:var(--shadow); min-width:0;}
+  .card h3{font-family:'Manrope', sans-serif; font-weight:700; font-size:15px; color:var(--navy); margin:0;}
+  .card p.take{font-size:12.8px; color:var(--faint); margin:3px 0 12px;}
+  .card p.take b{color:var(--text);}
+  .chart-box{position:relative; width:100%; height:300px;}
+  .chart-box.tall{height:360px;}
+  .chart-box.short{height:250px;}
+
+  .table-scroll{overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th, td{padding:9px 10px; text-align:left; border-bottom:1px solid var(--line);}
+  th{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--faint); white-space:nowrap; background:var(--panel-2);}
+  th:first-child{border-top-left-radius:8px;} th:last-child{border-top-right-radius:8px;}
+  td.num, th.num{text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums;}
+  td.name{font-weight:600; color:var(--text);}
+  td .muted{display:block; font-size:11.5px; font-weight:400; color:var(--faint);}
+  tbody tr:hover{background:#FAFBFD;}
+  tr:last-child td{border-bottom:none;}
+  .pill{display:inline-block; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:600; white-space:nowrap;}
+  .pill.good{background:var(--teal-soft); color:#0E7C69;}
+  .pill.warn{background:var(--orange-soft); color:#B4480E;}
+  .pill.bad{background:var(--red-soft); color:#B33131;}
+  .pill.neutral{background:var(--panel-2); color:var(--dim);}
+  .bar{display:inline-block; vertical-align:middle; width:56px; height:6px; border-radius:3px; background:var(--grid); margin-right:8px; overflow:hidden;}
+  .bar > i{display:block; height:100%; background:var(--steel); border-radius:3px;}
+
+  .model-strip{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin-bottom:18px;}
+  .stat{background:var(--panel-2); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .stat span{display:block; font-size:11.5px; color:var(--faint); font-weight:500;}
+  .stat strong{display:block; font-family:'Manrope', sans-serif; font-weight:800; font-size:21px; color:var(--navy); margin-top:2px;}
+  .stat strong.orange{color:var(--orange);}
+
+  footer{border-top:1px solid var(--line); margin-top:30px; padding:24px 0 48px; font-size:12.5px; color:var(--faint); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  footer a{color:var(--steel);}
+
+  @media (max-width: 1100px){
+    .kpis{grid-template-columns:repeat(2, minmax(0,1fr));}
+    .insights ol{grid-template-columns:minmax(0,1fr);}
+    .model-strip{grid-template-columns:repeat(2, minmax(0,1fr));}
+    .grid, .grid.wide-left{grid-template-columns:minmax(0,1fr);}
+  }
+  @media (max-width: 900px){
+    .section-note{text-align:left;}
+  }
+  @media (max-width: 560px){
+    .wrap{padding:0 16px;}
+    header{padding-top:28px;}
+    .kpis{gap:10px;}
+    .kpi{padding:12px 12px 10px;}
+    .kpi .num{font-size:22px;}
+    .card{padding:14px 12px 10px;}
+    .chart-box, .chart-box.tall{height:270px;}
+    .table-scroll td{white-space:nowrap;}
+  }
+  @media print{ nav.subnav{display:none;} .card, .kpi{box-shadow:none; break-inside:avoid;} }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Ahanyar Steel Trading Co. · Marketing, Sales &amp; CRM</div>
+    <h1>Fast quotes win steel deals. <em>The CRM's own probabilities don't know it.</em></h1>
+    <p class="lede" id="lede"></p>
+    <div class="flow">
+      <span class="node hot">Dynamics 365 Sales</span><span class="arrow">→</span>
+      <span class="node">Dataverse export + metadata</span><span class="arrow">→</span>
+      <span class="node">Decode &amp; quality checks</span><span class="arrow">→</span>
+      <span class="node">Star schema · SQLite + Power BI</span><span class="arrow">→</span>
+      <span class="node">Win model &amp; analytics</span><span class="arrow">→</span>
+      <span class="node hot">This dashboard</span>
+    </div>
+  </header>
+</div>
+
+<nav class="subnav" aria-label="Sections">
+  <div class="wrap">
+    <a href="#overview">Overview</a>
+    <a href="#market">Market &amp; Margin</a>
+    <a href="#marketing">Marketing</a>
+    <a href="#pipeline">Pipeline &amp; Win Model</a>
+    <a href="#winloss">Win / Loss</a>
+    <a href="#team">Sales Team</a>
+    <a href="#customers">Customers &amp; Credit</a>
+  </div>
+</nav>
+
+<div class="wrap">
+<main>
+
+  <section id="overview">
+    <div class="kpis" id="kpis"></div>
+    <p class="kpi-note" id="kpiNote"></p>
+    <div class="insights">
+      <h3>What the data says</h3>
+      <ol id="insights"></ol>
+    </div>
+  </section>
+
+  <section id="market">
+    <div class="section-head">
+      <h2>Market &amp; margin<small>Revenue follows the steel price as much as the tonnage</small></h2>
+      <div class="section-note">Monthly orders. The price index averages every product's list price, 100 = the first month.</div>
+    </div>
+    <div class="grid">
+      <div class="card full">
+        <h3>Revenue, tons and the steel price index</h3>
+        <p class="take" id="takeMonthly"></p>
+        <div class="chart-box tall"><canvas id="monthlyChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Price per ton: list, realized and cost</h3>
+        <p class="take" id="takePrice"></p>
+        <div class="chart-box"><canvas id="priceChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Product groups, last 12 months</h3>
+        <p class="take" id="takeGroups"></p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Group</th><th class="num">Revenue</th><th class="num">Tons</th><th class="num">Margin / t</th><th class="num">Margin</th><th class="num">Win rate</th></tr></thead>
+          <tbody id="groupTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="marketing">
+    <div class="section-head">
+      <h2>Marketing<small>From campaign response to won deal, and what each channel returned</small></h2>
+      <div class="section-note">First-touch attribution through the lead. Lifetime ROI counts every order from the accounts a campaign brought in.</div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>New-business funnel</h3>
+        <p class="take" id="takeFunnel"></p>
+        <div class="chart-box"><canvas id="funnelChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Return on marketing spend, by channel</h3>
+        <p class="take" id="takeRoi"></p>
+        <div class="chart-box"><canvas id="roiChart"></canvas></div>
+      </div>
+      <div class="card full">
+        <h3>Channel scorecard</h3>
+        <p class="take">Spend, leads and results for every channel over the 24 months of data. Returns are gross margin per rial spent: 1x breaks even.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Channel</th><th class="num">Spend</th><th class="num">Leads</th><th class="num">Cost / lead</th><th class="num">Won deals</th><th class="num">Accounts won</th><th class="num">Revenue from them</th><th class="num">First-deal return</th><th class="num">Lifetime return</th></tr></thead>
+          <tbody id="channelTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pipeline">
+    <div class="section-head">
+      <h2>Pipeline &amp; win model<small>A gradient-boosting model against the probability reps enter in Dynamics</small></h2>
+      <div class="section-note" id="modelNote"></div>
+    </div>
+    <div class="model-strip" id="modelStrip"></div>
+    <div class="grid">
+      <div class="card">
+        <h3>Win rate by time to first quote</h3>
+        <p class="take" id="takeSpeed"></p>
+        <div class="chart-box"><canvas id="speedChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Promised vs. delivered: calibration</h3>
+        <p class="take" id="takeCal"></p>
+        <div class="chart-box"><canvas id="calChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Open pipeline by stage</h3>
+        <p class="take" id="takeStage"></p>
+        <div class="chart-box short"><canvas id="stageChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>What drives a win</h3>
+        <p class="take">How much the model's accuracy (AUC) drops when each input is shuffled.</p>
+        <div class="chart-box short"><canvas id="importanceChart"></canvas></div>
+      </div>
+      <div class="card full">
+        <h3>Open deals worth the most, by the model's expected value</h3>
+        <p class="take">For a deal not yet quoted, the model assumes the quote goes out today, so its number is what a quote now is worth.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Customer</th><th>Rep</th><th>Product</th><th class="num">Tons</th><th>Stage</th><th class="num">Value</th><th class="num">CRM says</th><th class="num">Model says</th><th>Quote</th></tr></thead>
+          <tbody id="openTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="winloss">
+    <div class="section-head">
+      <h2>Win / loss<small>Why deals are lost, and what a discount really buys</small></h2>
+      <div class="section-note">Every closed deal in the data. Loss reasons come from the custom ahn_lossreason option set.</div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Why deals are lost</h3>
+        <p class="take" id="takeLoss"></p>
+        <div class="chart-box"><canvas id="lossChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Discount on the first quote: win rate and margin</h3>
+        <p class="take" id="takeDisc"></p>
+        <div class="chart-box"><canvas id="discChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Win rate by customer industry</h3>
+        <p class="take" id="takeInd"></p>
+        <div class="chart-box"><canvas id="industryChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Win rate against each competitor</h3>
+        <p class="take" id="takeComp"></p>
+        <div class="chart-box"><canvas id="compChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="team">
+    <div class="section-head">
+      <h2>Sales team<small>Last 12 months, per account owner</small></h2>
+      <div class="section-note">CRM optimism: how far a rep's last CRM probability sat above the actual outcome, on deals closed in the last six months.</div>
+    </div>
+    <div class="card">
+      <div class="table-scroll"><table>
+        <thead><tr><th>Rep</th><th class="num">Revenue</th><th class="num">Tons</th><th class="num">Won</th><th class="num">Win rate</th><th class="num">Avg discount</th><th class="num">Hours to quote</th><th class="num">Margin / t</th><th class="num">Open pipeline</th><th class="num">CRM optimism</th></tr></thead>
+        <tbody id="repTable"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="customers">
+    <div class="section-head">
+      <h2>Customers &amp; credit<small>Who buys, who has gone quiet, and who owes money</small></h2>
+      <div class="section-note" id="arNote"></div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Receivables aging by industry</h3>
+        <p class="take" id="takeAging"></p>
+        <div class="chart-box"><canvas id="agingChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Revenue by province, last 12 months</h3>
+        <p class="take" id="takeProv"></p>
+        <div class="chart-box"><canvas id="provChart"></canvas></div>
+      </div>
+      <div class="card full">
+        <h3>Win-back list: regular customers gone quiet</h3>
+        <p class="take" id="takeRisk"></p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Customer</th><th>Owner</th><th class="num">Orders</th><th class="num">Lifetime revenue</th><th class="num">Prior-year revenue</th><th>Last order</th><th class="num">Days silent</th></tr></thead>
+          <tbody id="riskTable"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>Top customers, last 12 months</h3>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Customer</th><th class="num">Revenue</th><th class="num">Tons</th><th class="num">vs prior year</th></tr></thead>
+          <tbody id="topTable"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>Credit by industry</h3>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Industry</th><th class="num">Open receivables</th><th class="num">Overdue</th><th class="num">DSO</th><th class="num">Days late</th></tr></thead>
+          <tbody id="creditTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+<footer>
+  <span id="footData"></span>
+  <span>Source &amp; pipeline: <a href="https://github.com/Milad-Shabani/Steel-sales-crm-intelligence">github.com/Milad-Shabani/Steel-sales-crm-intelligence</a> · Built by <a href="https://miladshabani.ir/">Milad Shabani</a></span>
+</footer>
+</div>
+
+<script>
+const D = DASHBOARD_DATA, K = D.kpi;
+const C = {navy:'#0B2545', steel:'#134074', blue:'#2F6DB5', sky:'#8DA9C4', orange:'#F26B1D', amber:'#F4A259', teal:'#14A38B', red:'#D64545', grid:'#EEF2F6', faint:'#8A96A8', pale:'#D6E0EA'};
+const nf = new Intl.NumberFormat('en-US');
+const fmt = n => nf.format(Math.round(n));
+const irr = (v, withUnit = true) => {
+  const a = Math.abs(v);
+  const [d, u] = a >= 1e12 ? [1e12, 'T'] : a >= 1e9 ? [1e9, 'B'] : [1e6, 'M'];
+  const x = v / d;
+  return (Math.abs(x) >= 100 ? x.toFixed(0) : x.toFixed(1)) + u + (withUnit ? ' IRR' : '');
+};
+const pct = (x, d = 0) => x == null ? '—' : (x * 100).toFixed(d) + '%';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const month = s => new Date(s + '-01').toLocaleDateString('en-US', {month:'short', year:'2-digit'});
+const dateLabel = s => s ? new Date(s).toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'}) : '—';
+const delta = (x, good = true, pp = false) => {
+  if (x == null) return '';
+  const up = x >= 0, ok = up === good;
+  return `<span class="delta ${ok ? 'up' : 'down'}">${up ? '▲' : '▼'} ${pp ? Math.abs(x * 100).toFixed(1) + ' pp' : Math.abs(x * 100).toFixed(0) + '%'}</span>`;
+};
+function spark(values, color) {
+  const v = values.filter(x => x != null);
+  if (v.length < 2) return '';
+  const min = Math.min(...v), max = Math.max(...v), w = 200, h = 30;
+  const pts = v.map((y, i) => [i / (v.length - 1) * w, h - 3 - (y - min) / ((max - min) || 1) * (h - 6)]);
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${d} L ${w} ${h} L 0 ${h} Z" fill="${color}" opacity=".10"/>
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+// ------------------------------------------------------------------ header and KPIs
+const M = D.monthly;
+document.getElementById('lede').innerHTML =
+  `Built on a <b>Microsoft Dynamics 365 Sales export</b>: ${D.data_quality.tables} Dataverse tables, ${fmt(D.data_quality.rows)} rows, ` +
+  `${D.data_quality.passed} of ${D.data_quality.checks} data-quality checks passed. Leads, opportunities, quotes, orders, invoices, ` +
+  `campaigns and activities for a steel trader, modelled into a star schema. Figures cover the 12 months to <b>${dateLabel(D.as_of)}</b> unless stated.`;
+const kpis = [
+  {label:'Revenue', num: irr(K.revenue), d: delta(K.revenue_delta), sub: fmt(K.orders) + ' orders from ' + fmt(K.active_customers) + ' customers', spark: spark(M.slice(-12).map(m => m.revenue), C.steel)},
+  {label:'Steel sold', num: fmt(K.tons) + ' t', d: delta(K.tons_delta), sub: 'avg ' + fmt(K.tons / K.orders) + ' t per order', spark: spark(M.slice(-12).map(m => m.tons), C.blue)},
+  {label:'Gross margin per ton', num: irr(K.margin_per_ton, false), d: delta(K.margin_per_ton_delta), sub: pct(K.margin_pct, 1) + ' gross margin, IRR per ton', spark: spark(M.slice(-12).map(m => m.margin_per_ton), C.orange), tone:'hot'},
+  {label:'Win rate', num: pct(K.win_rate), d: delta(K.win_rate_delta_pp, true, true), sub: pct(K.new_business_win_rate) + ' on new business', tone:'good'},
+  {label:'Open pipeline (model-weighted)', num: irr(K.open_model_weighted), sub: K.open_deals + ' open deals · the CRM says ' + irr(K.open_crm_weighted)},
+  {label:'Marketing ROI (customer lifetime)', num: (K.marketing_roi + 1).toFixed(1) + 'x', sub: 'margin per rial on ' + irr(K.marketing_spend) + ' spend', tone:'good'},
+  {label:'Days sales outstanding', num: Math.round(K.dso) + ' days', sub: pct(K.overdue_share) + ' of ' + irr(K.open_ar) + ' receivables overdue', tone: K.overdue_share > 0.2 ? 'risk' : ''},
+  {label:'Hours to first quote (median)', num: Math.round(K.median_hours_to_quote) + ' h', sub: pct(K.quoted_within_24h) + ' of deals quoted within a day', tone:'hot'},
+];
+document.getElementById('kpis').innerHTML = kpis.map(k =>
+  `<div class="kpi ${k.tone || ''}"><div class="label">${k.label}</div><div class="num">${k.num}${k.d || ''}</div><div class="sub">${k.sub}</div>${k.spark || ''}</div>`).join('');
+document.getElementById('kpiNote').textContent = 'Changes compare the last 12 months with the 12 months before. Sparklines show the last 12 months.';
+document.getElementById('insights').innerHTML = D.insights.map(i => `<li>${i}</li>`).join('');
+
+// ------------------------------------------------------------------ tables
+const groups = D.product_groups;
+const maxMpt = Math.max(...groups.map(g => g.margin_per_ton));
+document.getElementById('groupTable').innerHTML = groups.map(g => `<tr>
+  <td class="name">${esc(g.product_group)}</td><td class="num">${irr(g.revenue, false)}</td><td class="num">${fmt(g.tons)}</td>
+  <td class="num"><span class="bar"><i style="width:${(g.margin_per_ton / maxMpt * 100).toFixed(0)}%"></i></span>${irr(g.margin_per_ton, false)}</td>
+  <td class="num">${pct(g.margin_pct, 1)}</td><td class="num">${pct(g.win_rate)}</td></tr>`).join('');
+const bestGroup = groups.reduce((a, b) => a.margin_per_ton > b.margin_per_ton ? a : b);
+const volGroup = groups.reduce((a, b) => a.tons > b.tons ? a : b);
+document.getElementById('takeGroups').innerHTML = `<b>${esc(volGroup.product_group)}</b> moves the most tons at ${irr(volGroup.margin_per_ton)} per ton; <b>${esc(bestGroup.product_group)}</b> earns the most per ton (${irr(bestGroup.margin_per_ton)}).`;
+
+// return as a multiple of spend: gross margin earned per rial spent (1x = break-even)
+const roiPill = r => { const x = r + 1; return `<span class="pill ${x >= 2 ? 'good' : x >= 1 ? 'warn' : 'bad'}">${x >= 10 ? x.toFixed(0) : x.toFixed(1)}x</span>`; };
+document.getElementById('channelTable').innerHTML = D.channels.map(c => `<tr>
+  <td class="name">${esc(c.channel)}<span class="muted">${c.campaigns} campaign${c.campaigns > 1 ? 's' : ''}</span></td>
+  <td class="num">${irr(c.cost, false)}</td><td class="num">${fmt(c.leads)}</td><td class="num">${c.cost_per_lead ? irr(c.cost_per_lead, false) : '—'}</td>
+  <td class="num">${fmt(c.won_deals)}</td><td class="num">${fmt(c.acquired_accounts)}</td><td class="num">${irr(c.acquired_revenue, false)}</td>
+  <td class="num">${roiPill(c.first_deal_roi)}</td><td class="num">${roiPill(c.roi)}</td></tr>`).join('');
+
+const qBadge = h => h == null ? '<span class="pill bad">Not quoted</span>' : `<span class="pill ${h < 4 ? 'good' : h < 24 ? 'neutral' : 'warn'}">${h < 24 ? Math.round(h) + ' h' : (h / 24).toFixed(1) + ' days'}</span>`;
+document.getElementById('openTable').innerHTML = D.pipeline_top.map(o => `<tr>
+  <td class="name">${esc(o.name)}${o.competitor ? `<span class="muted">vs ${esc(o.competitor)}</span>` : ''}</td><td>${esc(o.owner)}</td><td>${esc(o.product_group)}</td>
+  <td class="num">${fmt(o.tons)}</td><td>${esc(o.stage)}</td><td class="num">${irr(o.estimated_value, false)}</td>
+  <td class="num">${pct(o.crm_probability)}</td><td class="num"><b>${pct(o.p_model)}</b></td><td>${qBadge(o.hours_to_first_quote)}</td></tr>`).join('');
+
+const teamWin = K.win_rate;
+document.getElementById('repTable').innerHTML = D.reps.map(r => `<tr>
+  <td class="name">${esc(r.rep)}<span class="muted">${esc(r.territory)}</span></td>
+  <td class="num">${irr(r.revenue, false)}</td><td class="num">${fmt(r.tons)}</td><td class="num">${fmt(r.deals_won)}</td>
+  <td class="num"><span class="pill ${r.win_rate >= teamWin ? 'good' : r.win_rate >= teamWin - 0.1 ? 'neutral' : 'bad'}">${pct(r.win_rate)}</span></td>
+  <td class="num"><span class="pill ${r.avg_discount > K.avg_discount * 1.3 ? 'bad' : 'neutral'}">${pct(r.avg_discount, 1)}</span></td>
+  <td class="num"><span class="pill ${r.median_hours_to_quote < 8 ? 'good' : r.median_hours_to_quote < 24 ? 'neutral' : 'warn'}">${Math.round(r.median_hours_to_quote)} h</span></td>
+  <td class="num">${irr(r.margin_per_ton, false)}</td><td class="num">${irr(r.open_model_weighted, false)}</td>
+  <td class="num"><span class="pill ${r.crm_optimism > 0.15 ? 'bad' : r.crm_optimism > 0.05 ? 'warn' : 'good'}">${r.crm_optimism >= 0 ? '+' : ''}${(r.crm_optimism * 100).toFixed(0)} pp</span></td></tr>`).join('');
+
+document.getElementById('riskTable').innerHTML = D.at_risk.map(a => `<tr>
+  <td class="name">${esc(a.name)}<span class="muted">${esc(a.industry)} · ${esc(a.province)}</span></td><td>${esc(a.owner)}</td>
+  <td class="num">${a.orders}</td><td class="num">${irr(a.revenue, false)}</td><td class="num">${irr(a.revenue_prior_year, false)}</td>
+  <td>${dateLabel(a.last_order)}</td><td class="num"><span class="pill ${a.days_silent > 180 ? 'bad' : 'warn'}">${a.days_silent}</span></td></tr>`).join('');
+document.getElementById('takeRisk').innerHTML = `<b>${D.at_risk_summary.accounts} of ${D.at_risk_summary.regular_customers}</b> customers with 3+ orders have been silent for more than 2.5x their usual reorder gap; together they bought <b>${irr(D.at_risk_summary.revenue_prior_year)}</b> in the year before. Largest first.`;
+
+document.getElementById('topTable').innerHTML = D.top_accounts.map(a => `<tr>
+  <td class="name">${esc(a.name)}<span class="muted">${esc(a.industry)} · ${esc(a.owner)}</span></td>
+  <td class="num">${irr(a.revenue, false)}</td><td class="num">${fmt(a.tons)}</td>
+  <td class="num">${a.growth == null ? '<span class="pill neutral">new</span>' : `<span class="pill ${a.growth >= 0 ? 'good' : 'bad'}">${a.growth >= 0 ? '+' : ''}${(a.growth * 100).toFixed(0)}%</span>`}</td></tr>`).join('');
+
+document.getElementById('creditTable').innerHTML = D.ar_industry.map(a => `<tr>
+  <td class="name">${esc(a.industry)}</td><td class="num">${irr(a.open_ar, false)}</td>
+  <td class="num"><span class="pill ${a.overdue_share > 0.4 ? 'bad' : a.overdue_share > 0.15 ? 'warn' : 'good'}">${pct(a.overdue_share)}</span></td>
+  <td class="num">${Math.round(a.dso)}</td><td class="num">${a.avg_days_late == null ? '—' : Math.round(a.avg_days_late)}</td></tr>`).join('');
+document.getElementById('arNote').textContent = `Open receivables ${irr(K.open_ar)} on ${dateLabel(D.as_of)}; DSO = receivables / last 12 months' sales × 365.`;
+
+// model strip
+const mm = D.model;
+document.getElementById('modelStrip').innerHTML = [
+  ['Model AUC (test)', mm.auc_model.toFixed(2), true], ['CRM probability AUC', mm.auc_crm.toFixed(2), false],
+  ['Model Brier score', mm.brier_model.toFixed(3), true], ['CRM Brier score', mm.brier_crm.toFixed(3), false],
+].map(([l, v, o]) => `<div class="stat"><span>${l}</span><strong class="${o ? 'orange' : ''}">${v}</strong></div>`).join('');
+document.getElementById('modelNote').textContent = `Trained on ${fmt(mm.n_train)} deals closed before ${dateLabel(mm.split_date)}, tested on the ${fmt(mm.n_test)} closed after. Higher AUC ranks winners better; lower Brier is better calibrated.`;
+document.getElementById('footData').textContent = `Synthetic Dynamics 365 export · ${D.data_quality.tables} tables · ${fmt(D.data_quality.rows)} rows · Ahanyar Steel Trading Co. is fictional`;
+
+// ------------------------------------------------------------------ charts
+function renderCharts() {
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#4F5D75';
+Chart.defaults.borderColor = '#E4E9F0';
+Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.plugins.tooltip.backgroundColor = '#0B2545';
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+Chart.defaults.plugins.legend.labels.boxHeight = 10;
+const legend = {position:'top', align:'end'};
+const g = {color: C.grid};
+const pctAxis = {grid: g, ticks: {callback: v => v + '%'}, beginAtZero: true};
+
+// monthly revenue, tons, price index
+const labels = M.map(m => month(m.month));
+new Chart(document.getElementById('monthlyChart'), {
+  data: {labels, datasets: [
+    {type:'bar', label:'Revenue', data: M.map(m => m.revenue / 1e12), backgroundColor: C.steel, borderRadius: 4, yAxisID:'y', order: 3},
+    {type:'line', label:'Tons (thousand)', data: M.map(m => m.tons / 1e3), borderColor: C.amber, backgroundColor: C.amber, yAxisID:'y2', tension:.3, pointRadius: 2, borderWidth: 2.5, order: 2},
+    {type:'line', label:'Price index', data: M.map(m => m.price_index), borderColor: C.orange, backgroundColor: C.orange, yAxisID:'y3', tension:.2, pointRadius: 0, borderWidth: 2.5, borderDash:[6, 4], order: 1},
+  ]},
+  options: {interaction:{mode:'index', intersect:false},
+    plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + (c.dataset.yAxisID === 'y' ? c.parsed.y.toFixed(2) + 'T IRR' : c.dataset.yAxisID === 'y2' ? fmt(c.parsed.y * 1000) + ' t' : c.parsed.y.toFixed(1))}}},
+    scales:{x:{grid:{display:false}}, y:{grid: g, title:{display:true, text:'Revenue (T IRR)'}}, y2:{position:'right', grid:{display:false}, title:{display:true, text:'Tons (thousand)'}}, y3:{display:false, min: 60}}}
+});
+const last = M[M.length - 1], first = M[0];
+document.getElementById('takeMonthly').innerHTML = `The dashed line is the price index: it rose from 100 to <b>${last.price_index.toFixed(0)}</b> over the period, with a jump in March 2025 and January 2026; revenue grew ${pct(K.revenue_delta)} on ${pct(K.tons_delta)} more tons.`;
+
+// price per ton
+new Chart(document.getElementById('priceChart'), {
+  type:'line',
+  data:{labels, datasets:[
+    {label:'List', data: M.map(m => m.list_per_ton / 1e6), borderColor: C.sky, backgroundColor: C.sky, tension:.25, pointRadius:0, borderWidth:2},
+    {label:'Realized', data: M.map(m => m.realized_per_ton / 1e6), borderColor: C.steel, backgroundColor: C.steel, tension:.25, pointRadius:0, borderWidth:2.5},
+    {label:'Cost', data: M.map(m => m.cost_per_ton / 1e6), borderColor: C.orange, backgroundColor: C.orange, tension:.25, pointRadius:0, borderWidth:2, borderDash:[5,4]},
+  ]},
+  options:{interaction:{mode:'index', intersect:false}, plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + c.parsed.y.toFixed(0) + 'M IRR/t'}}},
+    scales:{x:{grid:{display:false}, ticks:{maxTicksLimit: 8}}, y:{grid: g, title:{display:true, text:'M IRR per ton'}}}}
+});
+document.getElementById('takePrice').innerHTML = `Realized price sits ${pct(K.avg_discount, 1)} under list after discounts. Cost follows <b>last month's</b> mill price, so the gap to cost opens when prices jump.`;
+
+// funnel
+const F = D.funnel;
+new Chart(document.getElementById('funnelChart'), {
+  type:'bar',
+  data:{labels: F.map(f => f.stage), datasets:[{data: F.map(f => f.count), backgroundColor:[C.pale, C.sky, C.blue, C.steel, C.orange], borderRadius: 5}]},
+  options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => fmt(c.parsed.x) + (F[c.dataIndex].conversion_from_previous ? ' (' + pct(F[c.dataIndex].conversion_from_previous) + ' of previous)' : '')}}},
+    scales:{x:{type:'logarithmic', grid: g, ticks:{callback: v => [10, 100, 1000, 10000].includes(v) ? fmt(v) : ''}}, y:{grid:{display:false}}}}
+});
+const leads = F.find(f => f.stage === 'Leads'), won = F.find(f => f.stage === 'Won deals'), qual = F.find(f => f.stage === 'Qualified leads');
+document.getElementById('takeFunnel').innerHTML = `${pct(qual.count / leads.count)} of leads qualify and <b>${pct(won.count / leads.count, 1)}</b> end as a won deal. Log scale.`;
+
+// ROI by channel
+const ch = D.channels;
+new Chart(document.getElementById('roiChart'), {
+  type:'bar',
+  data:{labels: ch.map(c => c.channel), datasets:[
+    {label:'First-deal return', data: ch.map(c => c.first_deal_roi + 1), backgroundColor: C.sky, borderRadius: 4},
+    {label:'Customer-lifetime return', data: ch.map(c => c.roi + 1), backgroundColor: C.steel, borderRadius: 4},
+  ]},
+  options:{indexAxis:'y', plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + c.parsed.x.toFixed(1) + 'x the spend'}}},
+    scales:{x:{type:'logarithmic', grid: g, ticks:{callback: v => [0.5, 1, 2, 5, 10, 20, 50].includes(v) ? v + 'x' : ''}}, y:{grid:{display:false}}}}
+});
+const worstFirst = ch.reduce((a, b) => a.first_deal_roi < b.first_deal_roi ? a : b);
+document.getElementById('takeRoi').innerHTML = `Gross margin earned per rial spent (log scale; 1x = break-even). <b>${esc(ch[0].channel)}</b> leads on lifetime return; <b>${esc(worstFirst.channel)}</b> ${worstFirst.first_deal_roi < 0 ? 'loses money on first deals' : 'returns least on first deals'}.`;
+
+// quote speed
+const QS = D.quote_speed;
+new Chart(document.getElementById('speedChart'), {
+  type:'bar',
+  data:{labels: QS.map(q => q.bucket), datasets:[{data: QS.map(q => q.win_rate * 100), backgroundColor: QS.map((q, i) => [C.teal, C.blue, C.amber, C.orange, C.red][i]), borderRadius: 6, maxBarThickness: 70}]},
+  options:{plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => c.parsed.y.toFixed(0) + '% won of ' + fmt(QS[c.dataIndex].deals) + ' deals'}}},
+    scales:{x:{grid:{display:false}}, y:{...pctAxis, max: 100}}}
+});
+document.getElementById('takeSpeed').innerHTML = `Win rate falls from <b>${pct(QS[0].win_rate)}</b> for quotes sent within 4 hours to <b>${pct(QS[3].win_rate)}</b> after 3 days. Steel quotes expire in days, and prices move daily.`;
+
+// calibration
+const CAL = D.calibration.filter(c => c.deals_model > 0 || c.deals_crm > 0);
+new Chart(document.getElementById('calChart'), {
+  type:'bar',
+  data:{labels: CAL.map(c => c.bin), datasets:[
+    {label:'CRM: actual win rate', data: CAL.map(c => c.deals_crm >= 20 ? c.actual_crm * 100 : null), backgroundColor: C.sky, borderRadius: 4},
+    {label:'Model: actual win rate', data: CAL.map(c => c.deals_model >= 20 ? c.actual_model * 100 : null), backgroundColor: C.steel, borderRadius: 4},
+    {type:'line', label:'Promised (bin midpoint)', data: CAL.map(c => {const [a, b] = c.bin.replace('%', '').split('-').map(Number); return (a + b) / 2;}), borderColor: C.orange, backgroundColor: C.orange, borderDash:[5, 4], pointRadius: 3, borderWidth: 2},
+  ]},
+  options:{interaction:{mode:'index', intersect:false}, plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + (c.parsed.y == null ? '—' : c.parsed.y.toFixed(0) + '%')}}},
+    scales:{x:{grid:{display:false}, title:{display:true, text:'Predicted win probability'}}, y:{...pctAxis, max: 100}}}
+});
+const top = D.calibration.find(c => c.bin === '80-100%');
+document.getElementById('takeCal').innerHTML = `Deals the CRM put at 80%+ closed <b>${pct(top.actual_crm)}</b> of the time; the model's 80%+ deals closed ${pct(top.actual_model)}. Bins with fewer than 20 deals are left out.`;
+
+// open pipeline by stage
+const ST = D.pipeline_stage;
+new Chart(document.getElementById('stageChart'), {
+  type:'bar',
+  data:{labels: ST.map(s => s.stage), datasets:[
+    {label:'Unweighted', data: ST.map(s => s.value / 1e9), backgroundColor: C.pale, borderRadius: 4},
+    {label:'CRM-weighted', data: ST.map(s => s.crm_weighted / 1e9), backgroundColor: C.sky, borderRadius: 4},
+    {label:'Model-weighted', data: ST.map(s => s.model_weighted / 1e9), backgroundColor: C.steel, borderRadius: 4},
+  ]},
+  options:{plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + fmt(c.parsed.y) + 'B IRR'}}},
+    scales:{x:{grid:{display:false}}, y:{grid: g, title:{display:true, text:'B IRR'}}}}
+});
+document.getElementById('takeStage').innerHTML = `${K.open_deals} open deals worth ${irr(K.open_value)}. The CRM weights them to ${irr(K.open_crm_weighted)}, the model to <b>${irr(K.open_model_weighted)}</b>.`;
+
+// importance
+const IMP = D.importance.filter(i => i.importance > 0.001).slice(0, 7);
+new Chart(document.getElementById('importanceChart'), {
+  type:'bar',
+  data:{labels: IMP.map(i => i.feature), datasets:[{data: IMP.map(i => i.importance), backgroundColor: IMP.map((i, k) => k === 0 ? C.orange : C.steel), borderRadius: 4}]},
+  options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => 'AUC drop: ' + c.parsed.x.toFixed(3)}}},
+    scales:{x:{grid: g, beginAtZero: true}, y:{grid:{display:false}}}}
+});
+
+// loss reasons
+const LR = D.loss_reasons;
+new Chart(document.getElementById('lossChart'), {
+  type:'bar',
+  data:{labels: LR.map(l => l.loss_reason), datasets:[{data: LR.map(l => l.deals), backgroundColor: LR.map(l => l.loss_reason.startsWith('Slow') ? C.orange : l.loss_reason === 'Price' ? C.red : C.sky), borderRadius: 4}]},
+  options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => fmt(c.parsed.x) + ' deals (' + pct(LR[c.dataIndex].share) + '), ' + irr(LR[c.dataIndex].lost_value) + ' lost'}}},
+    scales:{x:{grid: g, beginAtZero: true}, y:{grid:{display:false}}}}
+});
+const slowLoss = LR.find(l => l.loss_reason.startsWith('Slow'));
+document.getElementById('takeLoss').innerHTML = `Competitors and price lead, but <b>${pct(slowLoss.share)}</b> of losses are slow quotes or expired prices, which a faster process can fix.`;
+
+// discount: win rate and margin
+const DS = D.discount, DM = D.discount_margin;
+new Chart(document.getElementById('discChart'), {
+  data:{labels: DS.map(d => d.bucket), datasets:[
+    {type:'bar', label:'Win rate', data: DS.map(d => d.win_rate * 100), backgroundColor: C.steel, borderRadius: 4, yAxisID:'y', maxBarThickness: 56},
+    {type:'line', label:'Margin per ton (M IRR)', data: DM.map(d => d.margin_per_ton / 1e6), borderColor: C.orange, backgroundColor: C.orange, pointRadius: 4, borderWidth: 2.5, yAxisID:'y2', tension:.2},
+  ]},
+  options:{interaction:{mode:'index', intersect:false}, plugins:{legend},
+    scales:{x:{grid:{display:false}, title:{display:true, text:'Discount on first quote'}}, y:{...pctAxis, max: 100}, y2:{position:'right', grid:{display:false}, beginAtZero: true, title:{display:true, text:'M IRR per ton'}}}}
+});
+document.getElementById('takeDisc').innerHTML = `More discount does not mean more wins: <b>4%+</b> quotes win ${pct(DS[4].win_rate)} vs ${pct(DS[1].win_rate)} at 1-2%, and earn ${irr(DM[4].margin_per_ton)} per ton instead of ${irr(DM[1].margin_per_ton)}.`;
+
+// industries
+const IN = D.industries;
+new Chart(document.getElementById('industryChart'), {
+  type:'bar',
+  data:{labels: IN.map(i => i.industry.replace(' Project', '').replace(' & Appliance Parts', ' & Appliances')), datasets:[{data: IN.map(i => i.win_rate * 100), backgroundColor: C.blue, borderRadius: 4}]},
+  options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => c.parsed.x.toFixed(0) + '% of ' + fmt(IN[c.dataIndex].deals) + ' deals · median ' + IN[c.dataIndex].cycle_days + ' days to close'}}},
+    scales:{x:{...pctAxis, max: 100}, y:{grid:{display:false}}}}
+});
+document.getElementById('takeInd').innerHTML = `<b>${esc(IN[0].industry)}</b> converts best (${pct(IN[0].win_rate)}); <b>${esc(IN[IN.length - 1].industry)}</b> least (${pct(IN[IN.length - 1].win_rate)}), with the longest cycles.`;
+
+// competitors
+const CP = D.competitors;
+new Chart(document.getElementById('compChart'), {
+  type:'bar',
+  data:{labels: CP.map(c => c.competitor), datasets:[{data: CP.map(c => c.win_rate * 100), backgroundColor: CP.map(c => c.competitor === 'No competitor' ? C.teal : c.competitor === 'Mill Direct Sales' ? C.red : C.sky), borderRadius: 4}]},
+  options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => c.parsed.x.toFixed(0) + '% won of ' + fmt(CP[c.dataIndex].deals)}}},
+    scales:{x:{...pctAxis, max: 100}, y:{grid:{display:false}}}}
+});
+const mill = CP.find(c => c.competitor === 'Mill Direct Sales'), none = CP.find(c => c.competitor === 'No competitor');
+document.getElementById('takeComp').innerHTML = `Uncontested deals close ${pct(none.win_rate)} of the time. The hardest rival is the mills themselves selling direct: <b>${pct(mill.win_rate)}</b>.`;
+
+// aging
+const AG = D.aging, buckets = ['Not yet due', '1-30 days', '31-60 days', '61-90 days', 'Over 90 days'];
+const agColors = [C.pale, C.sky, C.amber, C.orange, C.red];
+new Chart(document.getElementById('agingChart'), {
+  type:'bar',
+  data:{labels: AG.map(a => a.industry.replace(' Project', '').replace(' & Appliance Parts', ' & Appliances')), datasets: buckets.map((b, i) => ({label: b, data: AG.map(a => a[b] / 1e9), backgroundColor: agColors[i], borderRadius: 2}))},
+  options:{indexAxis:'y', plugins:{legend:{position:'top', align:'start', labels:{font:{size:11}}}, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + fmt(c.parsed.x) + 'B IRR'}}},
+    scales:{x:{stacked: true, grid: g, title:{display:true, text:'B IRR'}}, y:{stacked: true, grid:{display:false}}}}
+});
+document.getElementById('takeAging').innerHTML = `<b>${pct(K.overdue_share)}</b> of ${irr(K.open_ar)} open receivables is past due. Public projects pay latest.`;
+
+// provinces
+const PR = D.provinces;
+new Chart(document.getElementById('provChart'), {
+  type:'bar',
+  data:{labels: PR.map(p => p.province), datasets:[{data: PR.map(p => p.revenue / 1e12), backgroundColor: PR.map((p, i) => i === 0 ? C.orange : C.steel), borderRadius: 4}]},
+  options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => c.parsed.x.toFixed(1) + 'T IRR · ' + fmt(PR[c.dataIndex].tons) + ' t · ' + PR[c.dataIndex].customers + ' customers'}}},
+    scales:{x:{grid: g, title:{display:true, text:'T IRR'}}, y:{grid:{display:false}}}}
+});
+document.getElementById('takeProv').innerHTML = `<b>${esc(PR[0].province)}</b> brings ${pct(PR[0].revenue / PR.reduce((s, p) => s + p.revenue, 0))} of revenue from ${PR[0].customers} customers.`;
+}
+
+if (typeof Chart !== 'undefined') renderCharts();
+else document.querySelectorAll('.chart-box').forEach(b => b.outerHTML = '<p class="take">Charts could not load (chart.umd.min.js is missing or blocked). The numbers and tables are unaffected.</p>');
+
+// highlight the section in view
+const links = [...document.querySelectorAll('nav.subnav a')];
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
+  }), {rootMargin: '-40% 0px -55% 0px'});
+  document.querySelectorAll('main section[id]').forEach(s => io.observe(s));
+}
+</script>
+</body>
+</html>

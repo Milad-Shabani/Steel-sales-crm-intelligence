@@ -1,0 +1,51 @@
+EntityName,State,Status,IsUserLocalizedLabel,LocalizedLabelLanguageCode,LocalizedLabel
+account,0,1,False,1033,Active
+account,1,2,False,1033,Inactive
+lead,0,1,False,1033,New
+lead,0,2,False,1033,Contacted
+lead,1,3,False,1033,Qualified
+lead,2,4,False,1033,Lost
+lead,2,5,False,1033,Cannot Contact
+lead,2,6,False,1033,No Longer Interested
+lead,2,7,False,1033,Canceled
+opportunity,0,1,False,1033,In Progress
+opportunity,0,2,False,1033,On Hold
+opportunity,1,3,False,1033,Won
+opportunity,2,4,False,1033,Canceled
+opportunity,2,5,False,1033,Out-Sold
+quote,0,1,False,1033,In Progress
+quote,1,2,False,1033,In Progress
+quote,1,3,False,1033,Open
+quote,2,4,False,1033,Won
+quote,3,5,False,1033,Lost
+quote,3,6,False,1033,Canceled
+quote,3,7,False,1033,Revised
+salesorder,0,1,False,1033,New
+salesorder,0,2,False,1033,Pending
+salesorder,1,3,False,1033,In Progress
+salesorder,2,4,False,1033,No Money
+salesorder,3,100001,False,1033,Complete
+salesorder,3,100002,False,1033,Partial
+salesorder,4,100003,False,1033,Invoiced
+invoice,0,1,False,1033,New
+invoice,0,2,False,1033,Partially Shipped
+invoice,0,4,False,1033,Billed
+invoice,2,100001,False,1033,Complete
+invoice,2,100002,False,1033,Partial
+invoice,3,100003,False,1033,Canceled
+campaign,0,0,False,1033,Proposed
+campaign,0,1,False,1033,Ready To Launch
+campaign,0,2,False,1033,Launched
+campaign,0,3,False,1033,Completed
+campaign,0,4,False,1033,Canceled
+campaign,0,5,False,1033,Suspended
+campaign,1,6,False,1033,Inactive
+campaignresponse,0,1,False,1033,Open
+campaignresponse,1,2,False,1033,Closed
+campaignresponse,2,3,False,1033,Canceled
+activitypointer,0,1,False,1033,Open
+activitypointer,1,2,False,1033,Completed
+activitypointer,2,3,False,1033,Canceled
+activitypointer,3,4,False,1033,Scheduled
+product,0,1,False,1033,Active
+product,1,2,False,1033,Retired

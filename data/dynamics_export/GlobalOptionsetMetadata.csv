@@ -1,0 +1,22 @@
+OptionSetName,Option,IsUserLocalizedLabel,LocalizedLabelLanguageCode,LocalizedLabel,GlobalOptionSetName,EntityName
+ahn_productgroup,100000000,False,1033,Rebar,ahn_productgroup,product
+ahn_productgroup,100000001,False,1033,Beams & Sections,ahn_productgroup,product
+ahn_productgroup,100000002,False,1033,Hot-Rolled Sheet,ahn_productgroup,product
+ahn_productgroup,100000003,False,1033,Cold-Rolled Sheet,ahn_productgroup,product
+ahn_productgroup,100000004,False,1033,Galvanized Sheet,ahn_productgroup,product
+ahn_productgroup,100000005,False,1033,Pipes & Profiles,ahn_productgroup,product
+ahn_productgroup,100000006,False,1033,Wire Rod,ahn_productgroup,product
+ahn_productgroup,100000000,False,1033,Rebar,ahn_productgroup,lead
+ahn_productgroup,100000001,False,1033,Beams & Sections,ahn_productgroup,lead
+ahn_productgroup,100000002,False,1033,Hot-Rolled Sheet,ahn_productgroup,lead
+ahn_productgroup,100000003,False,1033,Cold-Rolled Sheet,ahn_productgroup,lead
+ahn_productgroup,100000004,False,1033,Galvanized Sheet,ahn_productgroup,lead
+ahn_productgroup,100000005,False,1033,Pipes & Profiles,ahn_productgroup,lead
+ahn_productgroup,100000006,False,1033,Wire Rod,ahn_productgroup,lead
+ahn_productgroup,100000000,False,1033,Rebar,ahn_productgroup,opportunity
+ahn_productgroup,100000001,False,1033,Beams & Sections,ahn_productgroup,opportunity
+ahn_productgroup,100000002,False,1033,Hot-Rolled Sheet,ahn_productgroup,opportunity
+ahn_productgroup,100000003,False,1033,Cold-Rolled Sheet,ahn_productgroup,opportunity
+ahn_productgroup,100000004,False,1033,Galvanized Sheet,ahn_productgroup,opportunity
+ahn_productgroup,100000005,False,1033,Pipes & Profiles,ahn_productgroup,opportunity
+ahn_productgroup,100000006,False,1033,Wire Rod,ahn_productgroup,opportunity

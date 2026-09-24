@@ -1,0 +1,12 @@
+systemuserid,fullname,firstname,lastname,title,territoryid,isdisabled,createdon
+451b4cf3-6123-4df7-b656-af7229d4beef,Kaveh Mohammadi,Kaveh,Mohammadi,Head of Sales,,False,2019-03-02T05:30:00Z
+b02b61c4-a3d7-4628-ace6-6fa2fd5166e6,Reza Karimi,Reza,Karimi,Senior Account Manager,7412b293-4729-4739-a14f-f3d719db3ad0,False,2019-12-19T05:30:00Z
+5304317f-af42-412f-b838-b3268e944239,Maryam Hosseini,Maryam,Hosseini,Account Manager,7412b293-4729-4739-a14f-f3d719db3ad0,False,2021-07-29T05:30:00Z
+0e51f30d-c6a7-4e39-84b0-32ccd7c524a5,Ali Rezaei,Ali,Rezaei,Account Manager,7412b293-4729-4739-a14f-f3d719db3ad0,False,2019-10-05T05:30:00Z
+ce177b4e-0837-48a3-9261-a7ab3aa2e4f9,Zahra Kazemi,Zahra,Kazemi,Key Account Manager,7412b293-4729-4739-a14f-f3d719db3ad0,False,2020-03-06T05:30:00Z
+10f1bc81-448a-4a9e-a6b2-bc5b50c187fc,Sara Moradi,Sara,Moradi,Senior Account Manager,29a3b2e9-5d65-4441-9588-42dea2bc372f,False,2019-05-07T05:30:00Z
+9132b63e-f162-47e4-a9c3-49e03602f8ac,Hamed Jafari,Hamed,Jafari,Account Manager,29a3b2e9-5d65-4441-9588-42dea2bc372f,False,2021-02-13T05:30:00Z
+366eb16f-508e-4ad7-b7c9-3acfe059a0ee,Niloofar Ahmadi,Niloofar,Ahmadi,Account Manager,a28defe3-9bf0-4273-9247-6f57a5e5a5ab,False,2020-10-06T05:30:00Z
+e27a984d-6548-41d0-bfcd-9eb1a7cad415,Mehdi Sadeghi,Mehdi,Sadeghi,Account Manager,3eabedcb-baa8-4dd4-88bd-64072bcfbe01,False,2019-05-17T05:30:00Z
+24933b83-7577-40a9-a491-f0b2ea1fca65,Parisa Nazari,Parisa,Nazari,Account Manager,ab9099a4-35a2-40ae-9af3-05535ec42e08,False,2019-09-17T05:30:00Z
+beb79919-3f22-4af8-a3be-d01d43cf2fde,Amir Ghasemi,Amir,Ghasemi,Account Manager,aefcfad8-efc8-4849-b3aa-7efe4458a885,False,2020-07-13T05:30:00Z

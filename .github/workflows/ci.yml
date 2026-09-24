@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Lint
+        run: flake8 src tests
+
+      - name: Run tests
+        run: pytest -v
+
+      - name: Run the pipeline on the committed export
+        run: python -m steel_crm.cli run --dashboard /tmp/data.js
+
+      - name: Regenerate the export and run again (smoke test)
+        run: |
+          python -m steel_crm.cli generate-data --out /tmp/export
+          python -m steel_crm.cli run --export /tmp/export --out /tmp/processed --dashboard /tmp/data2.js

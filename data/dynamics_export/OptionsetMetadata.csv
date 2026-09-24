@@ -1,0 +1,87 @@
+EntityName,OptionSetName,Option,IsUserLocalizedLabel,LocalizedLabelLanguageCode,LocalizedLabel
+account,industrycode,100000000,False,1033,Construction Contractor
+account,industrycode,100000001,False,1033,Structural Steel Fabricator
+account,industrycode,100000002,False,1033,Pipe & Profile Manufacturer
+account,industrycode,100000003,False,1033,Automotive & Appliance Parts
+account,industrycode,100000004,False,1033,Steel Distributor / Trader
+account,industrycode,100000005,False,1033,Government & Infrastructure Project
+account,industrycode,100000006,False,1033,Agricultural & Greenhouse
+account,customertypecode,3,False,1033,Customer
+account,customertypecode,8,False,1033,Prospect
+account,paymenttermscode,100000000,False,1033,Cash in advance
+account,paymenttermscode,1,False,1033,Net 30
+account,paymenttermscode,4,False,1033,Net 60
+account,paymenttermscode,100000001,False,1033,Net 90
+lead,industrycode,100000000,False,1033,Construction Contractor
+lead,industrycode,100000001,False,1033,Structural Steel Fabricator
+lead,industrycode,100000002,False,1033,Pipe & Profile Manufacturer
+lead,industrycode,100000003,False,1033,Automotive & Appliance Parts
+lead,industrycode,100000004,False,1033,Steel Distributor / Trader
+lead,industrycode,100000005,False,1033,Government & Infrastructure Project
+lead,industrycode,100000006,False,1033,Agricultural & Greenhouse
+lead,leadsourcecode,1,False,1033,Advertisement
+lead,leadsourcecode,2,False,1033,Employee Referral
+lead,leadsourcecode,3,False,1033,External Referral
+lead,leadsourcecode,4,False,1033,Partner
+lead,leadsourcecode,5,False,1033,Public Relations
+lead,leadsourcecode,6,False,1033,Seminar
+lead,leadsourcecode,7,False,1033,Trade Show
+lead,leadsourcecode,8,False,1033,Web
+lead,leadsourcecode,9,False,1033,Word of Mouth
+lead,leadsourcecode,10,False,1033,Other
+opportunity,salesstage,0,False,1033,Qualify
+opportunity,salesstage,1,False,1033,Develop
+opportunity,salesstage,2,False,1033,Propose
+opportunity,salesstage,3,False,1033,Close
+opportunity,msdyn_forecastcategory,100000001,False,1033,Pipeline
+opportunity,msdyn_forecastcategory,100000002,False,1033,Best case
+opportunity,msdyn_forecastcategory,100000003,False,1033,Committed
+opportunity,msdyn_forecastcategory,100000004,False,1033,Omitted
+opportunity,msdyn_forecastcategory,100000005,False,1033,Won
+opportunity,msdyn_forecastcategory,100000006,False,1033,Lost
+opportunity,ahn_lossreason,100000000,False,1033,Price
+opportunity,ahn_lossreason,100000001,False,1033,Lost to Competitor
+opportunity,ahn_lossreason,100000002,False,1033,Slow Quote / Price Expired
+opportunity,ahn_lossreason,100000003,False,1033,Credit Terms
+opportunity,ahn_lossreason,100000004,False,1033,Delivery Lead Time
+opportunity,ahn_lossreason,100000005,False,1033,Spec / Quality
+opportunity,ahn_lossreason,100000006,False,1033,Project Postponed
+opportunity,ahn_lossreason,100000007,False,1033,Bought Direct from Mill
+ahn_pipelinesnapshot,ahn_forecastcategory,100000001,False,1033,Pipeline
+ahn_pipelinesnapshot,ahn_forecastcategory,100000002,False,1033,Best case
+ahn_pipelinesnapshot,ahn_forecastcategory,100000003,False,1033,Committed
+ahn_pipelinesnapshot,ahn_forecastcategory,100000004,False,1033,Omitted
+ahn_pipelinesnapshot,ahn_forecastcategory,100000005,False,1033,Won
+ahn_pipelinesnapshot,ahn_forecastcategory,100000006,False,1033,Lost
+campaign,typecode,1,False,1033,Advertisement
+campaign,typecode,2,False,1033,Direct Marketing
+campaign,typecode,3,False,1033,Event
+campaign,typecode,4,False,1033,Co-branding
+campaign,typecode,5,False,1033,Other
+campaign,ahn_channel,100000000,False,1033,Trade Fair
+campaign,ahn_channel,100000001,False,1033,SMS Price Bulletin
+campaign,ahn_channel,100000002,False,1033,Email Newsletter
+campaign,ahn_channel,100000003,False,1033,Instagram Ads
+campaign,ahn_channel,100000004,False,1033,LinkedIn Ads
+campaign,ahn_channel,100000005,False,1033,Google Ads
+campaign,ahn_channel,100000006,False,1033,Telesales Outreach
+campaign,ahn_channel,100000007,False,1033,Customer Referral Program
+campaign,ahn_channel,100000008,False,1033,Mill Partner Webinar
+campaignresponse,responsecode,1,False,1033,Interested
+campaignresponse,responsecode,2,False,1033,Not Interested
+campaignresponse,responsecode,3,False,1033,Do Not Send Marketing Materials
+campaignresponse,responsecode,4,False,1033,Error
+campaignresponse,channeltypecode,1,False,1033,Phone
+campaignresponse,channeltypecode,2,False,1033,Email
+campaignresponse,channeltypecode,3,False,1033,Web form
+campaignresponse,channeltypecode,4,False,1033,In person
+campaignresponse,channeltypecode,5,False,1033,SMS reply
+campaignresponse,channeltypecode,6,False,1033,Social media
+salesorder,paymenttermscode,100000000,False,1033,Cash in advance
+salesorder,paymenttermscode,1,False,1033,Net 30
+salesorder,paymenttermscode,4,False,1033,Net 60
+salesorder,paymenttermscode,100000001,False,1033,Net 90
+invoice,paymenttermscode,100000000,False,1033,Cash in advance
+invoice,paymenttermscode,1,False,1033,Net 30
+invoice,paymenttermscode,4,False,1033,Net 60
+invoice,paymenttermscode,100000001,False,1033,Net 90

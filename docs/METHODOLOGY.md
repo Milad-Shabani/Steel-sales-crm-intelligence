@@ -13,6 +13,20 @@ The export date is the latest `createdon` in the data (30 June 2026). "Last 12 m
 - **Labels:** every option-set code has a label in the metadata (warning).
 - **Sales-process rules:** a won deal has a close date, a positive value and a sales order; a lost deal has a loss reason (warning); a close date is not before creation; a qualified lead points at its opportunity; a quote's valid-to date is not before its valid-from; `extendedamount = baseamount − manualdiscountamount` on every order line; order totals match their lines (warning); a paid invoice has a payment date.
 
+## Sales funnel
+
+The funnel follows the Dynamics 365 record types. Each step moves on or drops out as follows:
+
+| Step | Dataverse table | Moves on when | Drops out as |
+|---|---|---|---|
+| Lead (سرنخ فروش) | `lead` | it is qualified (statecode Qualified) | its disqualification status reason: Lost, Cannot Contact, No Longer Interested, Canceled; or still open |
+| Opportunity (فرصت فروش) | `opportunity` | a `quote` exists for it | lost before any quote (its `ahn_lossreason`), or open and not quoted yet |
+| Quote (پیش‌فاکتور) | `quote` | the deal is won | lost after quoting (its `ahn_lossreason`), or still being negotiated |
+| Order (سفارش) | `salesorder` | it is delivered and invoiced | awaiting delivery |
+| Invoice (فاکتور) | `invoice` | — | split into paid, open and not yet due, and overdue |
+
+Won / Lost (فروش موفق / از دست‌رفته) is the opportunity's final state. The new-business view covers every lead in the data window and the opportunities they became. The all-opportunities view adds repeat business from existing customers; those deals have no lead, so it starts at the opportunity. Every drop-out is counted exactly once, so each step's count equals the next step's count plus its drop-outs.
+
 ## Marketing attribution
 
 First touch, through the lead: a deal belongs to the campaign of the lead it was qualified from (`opportunity.originatingleadid → lead.campaignid`). Leads without a campaign are grouped by their lead source (Web, Word of Mouth, Employee Referral). Two returns are measured against a campaign's actual cost (`totalactualcost`), as gross margin earned per rial spent:

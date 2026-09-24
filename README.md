@@ -19,6 +19,7 @@ A steel trader buys rebar, beams, sheet, pipe and wire rod from the mills and se
 
 This project turns the Dynamics 365 export into answers:
 
+- **The sales funnel:** Lead → Opportunity → Quote → Order → Invoice → Won / Lost, the way Dynamics 365 records it, with how many deals drop out at each step and why.
 - **Marketing:** what each channel returned. The first-deal return and the customer-lifetime return tell very different stories.
 - **Sales:** how quote speed, discount, competitors and deal size move the win rate, and why deals are lost.
 - **Forecasting:** a win-probability model that scores the open pipeline better than the CRM's own numbers.
@@ -33,6 +34,7 @@ Last 12 months to 30 June 2026 unless stated.
 |---|---:|
 | Revenue / steel sold | **59.5T IRR** / **128,118 t** (1,377 orders, 510 customers) |
 | Gross margin | **34.2M IRR per ton** (7.4% of revenue) |
+| Sales funnel, new business (24 months) | 2,163 leads → 852 opportunities → 784 quoted → 365 orders → 364 invoices (93% paid) |
 | Win rate | **60%** overall, 42% on new business |
 | Win rate by time to first quote | **74%** under 4 hours → **37%** after 3 days |
 | Win model vs the CRM's own probability (1,106 deals closed Jan-Jun 2026) | AUC **0.67 vs 0.53**, Brier 0.220 vs 0.280 |
@@ -44,19 +46,23 @@ Last 12 months to 30 June 2026 unless stated.
 
 ## Dashboard
 
-A static, self-contained page ([`dashboard/index.html`](dashboard/index.html), Chart.js, white theme) with seven sections, published to GitHub Pages on every push to `main`. The headline sentences are computed from the data, so they stay true when the export changes.
+A static, self-contained page ([`dashboard/index.html`](dashboard/index.html), Chart.js, white theme) with eight sections, published to GitHub Pages on every push to `main`. The headline sentences are computed from the data, so they stay true when the export changes.
 
 **Overview: eight KPIs with 12-month trends, and what the data says**
 
 ![Overview: KPIs and auto-generated insights](docs/screenshots/overview.png)
 
+**Sales funnel: the Dynamics 365 process from lead to invoice, with where and why deals drop out (English and Persian labels, new business or all opportunities)**
+
+![Sales funnel: Lead, Opportunity, Quote, Order, Invoice, Won / Lost, with drop-out reasons](docs/screenshots/funnel.png)
+
 **Market and margin: revenue, tons and the steel price index; list vs. realized vs. cost per ton; product groups**
 
 ![Revenue, tons and price index; price per ton; product groups](docs/screenshots/market.png)
 
-**Marketing: the new-business funnel and first-deal vs. customer-lifetime return by channel**
+**Marketing: lead quality by source and first-deal vs. customer-lifetime return by channel**
 
-![Funnel, channel returns and channel scorecard](docs/screenshots/marketing.png)
+![Lead quality, channel returns and channel scorecard](docs/screenshots/marketing.png)
 
 **Pipeline and win model: quote speed, calibration against the CRM, drivers, and the open deals worth the most**
 
@@ -92,7 +98,7 @@ flowchart LR
 | Ingest | [`ingest/dataverse.py`](src/steel_crm/ingest/dataverse.py) | Checks every table has the columns the pipeline needs, adds a `<column>_label` for every option set, state and status, and converts UTC timestamps to Tehran time |
 | Quality | [`quality/checks.py`](src/steel_crm/quality/checks.py) | Unique keys, 29 lookup (foreign key) checks, codes without a label, and sales-process rules (a won deal has a value, a close date and an order; a qualified lead points at its opportunity; order lines add up). Errors stop the run |
 | Warehouse | [`warehouse/star_schema.py`](src/steel_crm/warehouse/star_schema.py) | Dimensions (date, account, product, rep, campaign) and facts (leads, opportunities with model features, order lines with cost and margin, invoices with days late, responses, activities, pipeline snapshots), written to SQLite and to CSV for Power BI |
-| Analytics | [`analytics/`](src/steel_crm/analytics) | Funnel and first-touch campaign ROI; KPIs, pricing and margin, win/loss, reps and provinces; receivables aging, DSO, top customers and the win-back list; the insight sentences |
+| Analytics | [`analytics/`](src/steel_crm/analytics) | The Dynamics 365 sales funnel with drop-out reasons; lead quality and first-touch campaign ROI; KPIs, pricing and margin, win/loss, reps and provinces; receivables aging, DSO, top customers and the win-back list; the insight sentences |
 | Model | [`models/win_probability.py`](src/steel_crm/models/win_probability.py) | Histogram gradient boosting on features known early in a deal; trained on deals closed before 2026, tested on the 1,106 closed after, compared with the reps' probabilities on the same deals, then refit to score the open pipeline |
 | Report | [`reporting/dashboard_data.py`](src/steel_crm/reporting/dashboard_data.py) | Writes `dashboard/data.js` for the static dashboard |
 
@@ -119,6 +125,7 @@ Standard option sets keep their Dynamics codes (lead source 7 = Trade Show, oppo
 
 ## Findings worth acting on
 
+- **The funnel leaks at two places.** 61% of new leads never qualify (mostly marked Lost or No Longer Interested), and 53% of quoted new-business deals are lost, most often over credit terms, price and competitors. Once a deal is won, delivery and billing hold up: all but one order is invoiced and 93% of invoices are paid.
 - **Quote within hours.** Win rate falls from 74% (under 4 hours) to 66%, 51% and 37% (over 3 days); deals never quoted are all lost. Hours to first quote is the model's strongest driver by a wide margin, and 13% of losses are recorded as "Slow Quote / Price Expired".
 - **Don't trust the CRM's probability for forecasting.** The reps' last probability before close hardly ranks winners (AUC 0.53) and is optimistic at the top: 80%+ deals close 61% of the time. The model ranks better (0.67) and weights the open pipeline at 2.8T IRR where the CRM says 3.7T.
 - **Discounts go to the hard deals and don't win them.** First quotes over 4% off win 52%, vs 70% at 1-2%, and earn 21.7M IRR per ton instead of 38.5M. One rep discounts 5.1% on average against a team rate of 2.9%, worth about 105B IRR of margin a year.

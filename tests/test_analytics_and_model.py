@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from steel_crm.analytics import accounts, marketing, sales
+from steel_crm.analytics.funnel import sales_funnel
 from steel_crm.models.win_probability import train_and_score
 from steel_crm.pipeline import run
 
@@ -20,9 +21,19 @@ def test_order_lines_add_up(warehouse):
     assert (lines["tons"] > 0).all()
 
 
-def test_funnel_narrows_at_every_stage(warehouse):
-    counts = marketing.funnel(warehouse)["count"].tolist()
+@pytest.mark.parametrize("view", ["new_business", "all"])
+def test_sales_funnel_accounts_for_every_record(warehouse, view):
+    seg = sales_funnel(warehouse)[view]
+    steps, leaks = seg["steps"], seg["leaks"]
+    counts = [s["count"] for s in steps]
     assert counts == sorted(counts, reverse=True)
+    # every step's drop-outs plus what moved on add up to the step
+    for step, nxt, leak in zip(steps, steps[1:], leaks):
+        assert step["count"] == nxt["count"] + leak["count"]
+        assert leak["count"] == sum(r["count"] for r in leak["reasons"])
+    out = seg["outcome"]
+    assert out["won"] + out["lost"] + out["open"] == steps[1 if view == "new_business" else 0]["count"]
+    assert sum(r["count"] for r in steps[-1]["payment"]) == steps[-1]["count"]
 
 
 def test_channel_totals_match_campaigns(warehouse):

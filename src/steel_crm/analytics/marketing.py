@@ -1,4 +1,4 @@
-"""Marketing: the new-business funnel and what each campaign really returned.
+"""Marketing: lead quality by source and what each campaign really returned.
 
 Attribution is first-touch through the lead: a deal belongs to the campaign
 of the lead it was qualified from. Two returns are measured against what a
@@ -14,22 +14,6 @@ from __future__ import annotations
 import pandas as pd
 
 from ..warehouse.star_schema import Warehouse
-
-
-def funnel(wh: Warehouse) -> pd.DataFrame:
-    leads = wh.fact_lead
-    opps = wh.fact_opportunity
-    new = opps[opps["originatingleadid"].notna()]
-    stages = [
-        ("Campaign responses", len(wh.fact_campaign_response)),
-        ("Leads", len(leads)),
-        ("Qualified leads", int((leads["status"] == "Qualified").sum())),
-        ("Quoted opportunities", int((new["n_quotes"] > 0).sum())),
-        ("Won deals", int((new["state"] == "Won").sum())),
-    ]
-    df = pd.DataFrame(stages, columns=["stage", "count"])
-    df["conversion_from_previous"] = df["count"] / df["count"].shift(1)
-    return df
 
 
 def lead_sources(wh: Warehouse) -> pd.DataFrame:

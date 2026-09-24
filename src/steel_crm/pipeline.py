@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 from .analytics import accounts, marketing, sales
+from .analytics.funnel import sales_funnel
 from .analytics.insights import build_insights
 from .ingest.dataverse import load_export
 from .models.win_probability import train_and_score
@@ -55,7 +56,7 @@ def run(export_dir: Path = Path("data/dynamics_export"), out_dir: Path = Path("d
     top_open = pipe["top"].merge(wh.dim_account[["accountid", "name"]], on="accountid")
     payload = {
         "as_of": wh.as_of, "kpi": k, "insights": insights, "model": model.metrics,
-        "monthly": records(monthly), "funnel": records(marketing.funnel(wh)),
+        "monthly": records(monthly), "sales_funnel": sales_funnel(wh),
         "lead_sources": records(marketing.lead_sources(wh)),
         "channels": records(channels), "campaigns": records(campaigns.head(12), [
             "name", "channel", "cost", "leads", "won_deals", "first_deal_roi", "acquired_accounts",

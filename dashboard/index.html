@@ -7,7 +7,7 @@
 <title>Ahanyar Steel Trading — Marketing, Sales &amp; CRM Intelligence</title>
 <meta name="description" content="Marketing, sales and CRM analytics for a steel trading company, built on a Microsoft Dynamics 365 Sales (Dataverse) export.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="./chart.umd.min.js"></script>
 <script src="./data.js"></script>
 <style>
@@ -122,6 +122,49 @@
   .stat strong{display:block; font-family:'Manrope', sans-serif; font-weight:800; font-size:21px; color:var(--navy); margin-top:2px;}
   .stat strong.orange{color:var(--orange);}
 
+  /* Sales funnel: Lead -> Opportunity -> Quote -> Order -> Invoice, with drop-outs */
+  .fa{font-family:'Vazirmatn', Tahoma, sans-serif; direction:rtl; unicode-bidi:isolate;}
+  h2 .fa{font-size:17px; font-weight:700; color:var(--orange); margin-left:8px;}
+  .funnel-tabs{display:inline-flex; background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:4px; gap:4px; flex-wrap:wrap;}
+  .funnel-tabs button{border:0; background:transparent; font:700 13px 'Manrope', sans-serif; color:var(--dim); padding:7px 14px; border-radius:999px; cursor:pointer;}
+  .funnel-tabs button.on{background:#fff; color:var(--navy); box-shadow:0 1px 4px rgba(11,37,69,.14);}
+  .funnel{display:grid; grid-template-columns:170px minmax(0,1.1fr) minmax(0,1fr); column-gap:26px; margin-top:6px;}
+  .f-label{display:flex; flex-direction:column; justify-content:center; padding:12px 0; border-bottom:1px dashed var(--line);}
+  .f-label .en{font-family:'Manrope', sans-serif; font-weight:800; font-size:17px; color:var(--navy); line-height:1.2;}
+  .f-label .fa{font-size:14.5px; font-weight:600; color:var(--orange); margin-top:2px; text-align:left;}
+  .f-label code{font-size:11px; color:var(--faint); margin-top:5px;}
+  .f-shape{position:relative; min-height:118px;}
+  .f-shape .trap{position:absolute; top:0; bottom:0; left:50%; width:var(--w); transform:translateX(-50%);
+    clip-path:polygon(0 0, 100% 0, calc(50% + var(--r) / 2) 100%, calc(50% - var(--r) / 2) 100%);}
+  .f-num{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; padding:0 8px;}
+  .f-num strong{font-family:'Manrope', sans-serif; font-weight:800; font-size:26px; line-height:1.1; text-shadow:0 1px 2px rgba(0,0,0,.15);}
+  .f-num span{font-size:11.5px; opacity:.9; max-width:62%;}
+  .f-leak{display:flex; flex-direction:column; justify-content:center; gap:4px; padding:12px 0; border-bottom:1px dashed var(--line);}
+  .leak-head{display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 12px; font-size:12.5px; margin-bottom:3px;}
+  .leak-head .pass{font-weight:700; color:#0E7C69;}
+  .leak-head .drop{font-weight:700; color:#B33131;}
+  .leak-head .ok{font-weight:700; color:var(--steel);}
+  .r{display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) 46px; align-items:center; gap:8px; font-size:12px; color:var(--dim);}
+  .r .rl{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .r .rl .fa{margin-left:6px; color:var(--faint); font-size:11.5px;}
+  .r .rb{height:7px; background:var(--grid); border-radius:4px; overflow:hidden;}
+  .r .rb i{display:block; height:100%; background:var(--red); border-radius:4px; opacity:.85;}
+  .r.pending .rb i{background:var(--sky);}
+  .r.paid .rb i{background:var(--teal);}
+  .r .rc{text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:var(--text);}
+  .r-more{font-size:11.5px; color:var(--faint);}
+  .outcome{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; margin-top:22px;}
+  .outcome-bar{grid-column:1 / -1; display:flex; height:12px; border-radius:6px; overflow:hidden; background:var(--grid);}
+  .outcome-bar i{display:block; height:100%;}
+  .oc{border-radius:12px; padding:14px 16px; border:1px solid var(--line); background:var(--panel-2);}
+  .oc.won{background:var(--teal-soft); border-color:#BFE8DE;}
+  .oc.lost{background:var(--red-soft); border-color:#F3C9C9;}
+  .oc .lbl{display:flex; align-items:baseline; gap:8px; font-weight:700; font-size:13px; color:var(--dim);}
+  .oc .lbl .fa{font-size:13.5px;}
+  .oc strong{display:block; font-family:'Manrope', sans-serif; font-weight:800; font-size:27px; color:var(--navy); margin-top:4px; line-height:1.15;}
+  .oc .sub{font-size:12.3px; color:var(--dim); margin-top:3px;}
+  .oc .sub b{color:var(--text);}
+
   footer{border-top:1px solid var(--line); margin-top:30px; padding:24px 0 48px; font-size:12.5px; color:var(--faint); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;}
   footer a{color:var(--steel);}
 
@@ -133,6 +176,11 @@
   }
   @media (max-width: 900px){
     .section-note{text-align:left;}
+    .funnel{grid-template-columns:minmax(0,1fr);}
+    .f-label{border-bottom:0; padding:14px 0 6px;}
+    .f-shape{min-height:96px;}
+    .f-leak{padding:10px 0 16px;}
+    .outcome{grid-template-columns:minmax(0,1fr);}
   }
   @media (max-width: 560px){
     .wrap{padding:0 16px;}
@@ -168,6 +216,7 @@
 <nav class="subnav" aria-label="Sections">
   <div class="wrap">
     <a href="#overview">Overview</a>
+    <a href="#funnel">Sales Funnel</a>
     <a href="#market">Market &amp; Margin</a>
     <a href="#marketing">Marketing</a>
     <a href="#pipeline">Pipeline &amp; Win Model</a>
@@ -186,6 +235,21 @@
     <div class="insights">
       <h3>What the data says</h3>
       <ol id="insights"></ol>
+    </div>
+  </section>
+
+  <section id="funnel">
+    <div class="section-head">
+      <h2>Sales funnel <span class="fa">قیف فروش</span><small>The Dynamics 365 sales process from lead to invoice: how many records move on at each step, and why the rest drop out</small></h2>
+      <div class="funnel-tabs" role="tablist" aria-label="Funnel view">
+        <button type="button" class="on" data-view="new_business" role="tab" aria-selected="true">New business · from leads</button>
+        <button type="button" data-view="all" role="tab" aria-selected="false">All opportunities · incl. repeat</button>
+      </div>
+    </div>
+    <div class="card">
+      <p class="take" id="takeFunnel"></p>
+      <div class="funnel" id="funnelSteps"></div>
+      <div class="outcome" id="funnelOutcome"></div>
     </div>
   </section>
 
@@ -223,9 +287,9 @@
     </div>
     <div class="grid">
       <div class="card">
-        <h3>New-business funnel</h3>
-        <p class="take" id="takeFunnel"></p>
-        <div class="chart-box"><canvas id="funnelChart"></canvas></div>
+        <h3>Lead quality by source</h3>
+        <p class="take" id="takeLeadSrc"></p>
+        <div class="chart-box"><canvas id="leadSrcChart"></canvas></div>
       </div>
       <div class="card">
         <h3>Return on marketing spend, by channel</h3>
@@ -528,16 +592,19 @@ new Chart(document.getElementById('priceChart'), {
 });
 document.getElementById('takePrice').innerHTML = `Realized price sits ${pct(K.avg_discount, 1)} under list after discounts. Cost follows <b>last month's</b> mill price, so the gap to cost opens when prices jump.`;
 
-// funnel
-const F = D.funnel;
-new Chart(document.getElementById('funnelChart'), {
+// lead quality by source
+const LS = D.lead_sources.filter(l => l.leads >= 20).sort((a, b) => b.lead_to_win - a.lead_to_win);
+new Chart(document.getElementById('leadSrcChart'), {
   type:'bar',
-  data:{labels: F.map(f => f.stage), datasets:[{data: F.map(f => f.count), backgroundColor:[C.pale, C.sky, C.blue, C.steel, C.orange], borderRadius: 5}]},
-  options:{indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label: c => fmt(c.parsed.x) + (F[c.dataIndex].conversion_from_previous ? ' (' + pct(F[c.dataIndex].conversion_from_previous) + ' of previous)' : '')}}},
-    scales:{x:{type:'logarithmic', grid: g, ticks:{callback: v => [10, 100, 1000, 10000].includes(v) ? fmt(v) : ''}}, y:{grid:{display:false}}}}
+  data:{labels: LS.map(l => l.channel), datasets:[
+    {label:'Qualified', data: LS.map(l => l.qualify_rate * 100), backgroundColor: C.sky, borderRadius: 4},
+    {label:'Won', data: LS.map(l => l.lead_to_win * 100), backgroundColor: C.steel, borderRadius: 4},
+  ]},
+  options:{indexAxis:'y', plugins:{legend, tooltip:{callbacks:{label: c => c.dataset.label + ': ' + c.parsed.x.toFixed(0) + '% of ' + fmt(LS[c.dataIndex].leads) + ' leads'}}},
+    scales:{x:{...pctAxis, max: 100}, y:{grid:{display:false}}}}
 });
-const leads = F.find(f => f.stage === 'Leads'), won = F.find(f => f.stage === 'Won deals'), qual = F.find(f => f.stage === 'Qualified leads');
-document.getElementById('takeFunnel').innerHTML = `${pct(qual.count / leads.count)} of leads qualify and <b>${pct(won.count / leads.count, 1)}</b> end as a won deal. Log scale.`;
+const bestSrc = LS[0], worstSrc = LS[LS.length - 1];
+document.getElementById('takeLeadSrc').innerHTML = `Share of each source's leads that qualify, and that end in a won deal. <b>${esc(bestSrc.channel)}</b> leads win ${pct(bestSrc.lead_to_win)}; <b>${esc(worstSrc.channel)}</b> only ${pct(worstSrc.lead_to_win)}.`;
 
 // ROI by channel
 const ch = D.channels;
@@ -666,6 +733,75 @@ new Chart(document.getElementById('provChart'), {
 });
 document.getElementById('takeProv').innerHTML = `<b>${esc(PR[0].province)}</b> brings ${pct(PR[0].revenue / PR.reduce((s, p) => s + p.revenue, 0))} of revenue from ${PR[0].customers} customers.`;
 }
+
+// ------------------------------------------------------------------ sales funnel (plain HTML/CSS, no Chart.js needed)
+const FA = {
+  'Lost':'از دست رفته', 'Cannot Contact':'عدم دسترسی', 'No Longer Interested':'عدم تمایل', 'Canceled':'لغو شده',
+  'Still open':'در حال پیگیری', 'Open, not quoted yet':'باز، هنوز بدون پیش‌فاکتور', 'Open, still negotiating':'باز، در حال مذاکره',
+  'Awaiting delivery':'در انتظار تحویل', 'Price':'قیمت', 'Lost to Competitor':'باخت به رقیب',
+  'Slow Quote / Price Expired':'پیش‌فاکتور دیرهنگام / انقضای قیمت', 'Credit Terms':'شرایط اعتباری', 'Delivery Lead Time':'زمان تحویل',
+  'Spec / Quality':'مشخصات / کیفیت', 'Project Postponed':'تعویق پروژه', 'Bought Direct from Mill':'خرید مستقیم از کارخانه',
+  'Paid':'تسویه‌شده', 'Open, not due':'باز، سررسید نشده', 'Overdue':'معوق', 'Not recorded':'ثبت نشده',
+};
+const fa = r => FA[r] ? `<span class="fa">${FA[r]}</span>` : '';
+const pending = r => r.startsWith('Open') || r === 'Still open' || r === 'Awaiting delivery';
+const STEP_COLOR = {lead:'#8DA9C4', opportunity:'#5B84B1', quote:'#2F6DB5', order:'#134074', invoice:'#0B2545'};
+
+function reasonRows(reasons, total, cls) {
+  const top = reasons.slice(0, 6), max = Math.max(1, ...top.map(r => r.count));
+  const rows = top.map(r => `<div class="r ${cls ? cls(r.reason) : (pending(r.reason) ? 'pending' : '')}" title="${esc(r.reason)}: ${fmt(r.count)} (${pct(r.count / total)})">
+      <span class="rl">${esc(r.reason)}${fa(r.reason)}</span><span class="rb"><i style="width:${(r.count / max * 100).toFixed(0)}%"></i></span><span class="rc">${fmt(r.count)}</span></div>`).join('');
+  const rest = reasons.slice(6);
+  return rows + (rest.length ? `<div class="r-more">+ ${rest.length} more reason${rest.length > 1 ? 's' : ''} (${fmt(rest.reduce((a, r) => a + r.count, 0))})</div>` : '');
+}
+
+function renderFunnel(view) {
+  const seg = D.sales_funnel[view], steps = seg.steps, max = steps[0].count;
+  const width = c => 30 + 70 * Math.pow(c / max, 0.6);
+  document.getElementById('funnelSteps').innerHTML = steps.map((s, i) => {
+    const next = steps[i + 1], leak = seg.leaks[i];
+    const w = width(s.count), wNext = next ? width(next.count) : w * 0.85;
+    let caption = s.value != null ? irr(s.value) : fmt(s.tons) + ' t requested';
+    if (s.key === 'quote') caption += ` · ${fmt(s.quotes_issued)} quotes incl. revisions`;
+    if (s.key === 'order' && s.tons) caption += ` · ${fmt(s.tons)} t`;
+    let right;
+    if (leak) {
+      right = `<div class="leak-head"><span class="pass">${pct(next.count / s.count)} move on to ${next.en}</span>` +
+        `<span class="${leak.count ? 'drop' : 'ok'}">${leak.count ? fmt(leak.count) + ' drop out (' + pct(leak.count / s.count) + ')' : 'none drop out'}</span></div>` +
+        reasonRows(leak.reasons, s.count);
+    } else {
+      right = `<div class="leak-head"><span class="ok">Payment status</span><span class="ok">${pct((s.payment.find(p => p.reason === 'Paid') || {count: 0}).count / s.count)} paid</span></div>` +
+        reasonRows(s.payment, s.count, r => r === 'Paid' ? 'paid' : r === 'Overdue' ? '' : 'pending');
+    }
+    return `<div class="f-label"><span class="en">${s.en}</span><span class="fa">${s.fa}</span><code>${s.entity}</code></div>
+      <div class="f-shape"><div class="trap" style="--w:${w.toFixed(1)}%; --r:${(wNext / w * 100).toFixed(1)}%; background:${STEP_COLOR[s.key]}"></div>
+        <div class="f-num"><strong>${fmt(s.count)}</strong><span>${caption}</span></div></div>
+      <div class="f-leak">${right}</div>`;
+  }).join('');
+
+  const o = seg.outcome, total = o.won + o.lost + o.open;
+  const topLost = o.lost_reasons.slice(0, 3).map(r => `${esc(r.reason)} (${fmt(r.count)})`).join(', ');
+  document.getElementById('funnelOutcome').innerHTML =
+    `<div class="outcome-bar" title="Won / Lost / Open"><i style="width:${o.won / total * 100}%; background:${C.teal}"></i><i style="width:${o.lost / total * 100}%; background:${C.red}"></i><i style="width:${o.open / total * 100}%; background:${C.sky}"></i></div>
+     <div class="oc won"><div class="lbl">Won <span class="fa">فروش موفق</span></div><strong>${fmt(o.won)}</strong><div class="sub"><b>${irr(o.won_value)}</b> · win rate <b>${pct(o.win_rate)}</b> of closed deals</div></div>
+     <div class="oc lost"><div class="lbl">Lost <span class="fa">از دست‌رفته</span></div><strong>${fmt(o.lost)}</strong><div class="sub"><b>${irr(o.lost_value)}</b> of estimated value · top reasons: ${topLost}</div></div>
+     <div class="oc"><div class="lbl">Still open <span class="fa">باز</span></div><strong>${fmt(o.open)}</strong><div class="sub"><b>${irr(o.open_value)}</b> in the open pipeline</div></div>`;
+
+  const q = steps.find(s => s.key === 'quote'), qLeak = seg.leaks[steps.indexOf(q)];
+  const qLost = qLeak.reasons.filter(r => !pending(r.reason));
+  const inv = steps[steps.length - 1], paid = (inv.payment.find(p => p.reason === 'Paid') || {count: 0}).count;
+  const period = `${dateLabel(D.sales_funnel.from)} – ${dateLabel(D.sales_funnel.to)}`;
+  let text = view === 'new_business'
+    ? `Leads created ${period}. <b>${pct(steps[1].count / steps[0].count)}</b> of leads qualify; most of the rest are marked ${esc(seg.leaks[0].reasons[0].reason)} or ${esc(seg.leaks[0].reasons[1].reason)}. `
+    : `Every opportunity ${period}, repeat orders from existing customers included (they have no lead, so this view starts at the opportunity). `;
+  text += `The biggest leak after that is the quote: <b>${pct(qLeak.count / q.count)}</b> of quoted deals don't close, led by ${esc(qLost[0].reason)} and ${esc(qLost[1].reason)}. Once won, ${pct(inv.count / steps[steps.length - 2].count)} of orders are invoiced and ${pct(paid / inv.count)} of invoices are paid.`;
+  document.getElementById('takeFunnel').innerHTML = text;
+}
+document.querySelectorAll('.funnel-tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.funnel-tabs button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+  renderFunnel(b.dataset.view);
+}));
+renderFunnel('new_business');
 
 if (typeof Chart !== 'undefined') renderCharts();
 else document.querySelectorAll('.chart-box').forEach(b => b.outerHTML = '<p class="take">Charts could not load (chart.umd.min.js is missing or blocked). The numbers and tables are unaffected.</p>');
